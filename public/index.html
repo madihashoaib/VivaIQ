@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VivaIQ — Login</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #080b14;
+      font-family: 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
+
+    .container {
+      text-align: center;
+      width: 100%;
+      max-width: 420px;
+      padding: 24px;
+    }
+
+    .brand h1 {
+      font-size: 52px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #ffffff, #00e5ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+
+    .brand p {
+      color: #6b7a9e;
+      font-size: 13px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 40px;
+    }
+
+    .card {
+      background: #0d1220;
+      border: 1px solid #1e2a42;
+      border-radius: 20px;
+      padding: 40px;
+    }
+
+    .card h2 {
+      font-size: 22px;
+      margin-bottom: 28px;
+      color: white;
+    }
+
+    input {
+      width: 100%;
+      background: #141929;
+      border: 1px solid #1e2a42;
+      border-radius: 10px;
+      padding: 14px 16px;
+      color: white;
+      font-size: 14px;
+      margin-bottom: 14px;
+      outline: none;
+    }
+
+    input:focus { border-color: #00e5ff; }
+
+    button {
+      width: 100%;
+      background: linear-gradient(135deg, #00e5ff, #a259ff);
+      border: none;
+      border-radius: 10px;
+      padding: 16px;
+      color: #000;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      margin-top: 8px;
+      letter-spacing: 1px;
+    }
+
+    button:hover { opacity: 0.9; transform: translateY(-2px); }
+
+    .card p { margin-top: 20px; color: #6b7a9e; font-size: 13px; }
+    .card a { color: #00e5ff; text-decoration: none; font-weight: 700; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <div class="brand">
+      <h1>VivaIQ</h1>
+      <p>Intelligent Viva Simulator</p>
+    </div>
+
+    <div class="card">
+
+      <!-- Login Form -->
+      <div id="login-form">
+        <h2>Welcome Back</h2>
+        <input type="email" id="login-email" placeholder="Email Address" />
+        <input type="password" id="login-password" placeholder="Password" />
+        <button onclick="loginUser()">Login</button>
+        <p>Don't have an account?
+          <a href="#" onclick="showSignup()">Sign Up</a>
+        </p>
+      </div>
+
+      <!-- Signup Form -->
+      <div id="signup-form" style="display:none;">
+        <h2>Create Account</h2>
+        <input type="text" id="signup-name" placeholder="Full Name" />
+        <input type="email" id="signup-email" placeholder="Email Address" />
+        <input type="password" id="signup-password" placeholder="Password" />
+        <button onclick="signupUser()">Create Account</button>
+        <p>Already have an account?
+          <a href="#" onclick="showLogin()">Login</a>
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAzVeBAh3N9F2aFW422YZ_6mcXwlYcyf3E",
+      authDomain: "vivaiq-24c89.firebaseapp.com",
+      projectId: "vivaiq-24c89",
+      storageBucket: "vivaiq-24c89.firebasestorage.app",
+      messagingSenderId: "356031432226",
+      appId: "1:356031432226:web:d9363105d8a7bcdbc9ac7b"
+    };
+
+    const app = initializeApp(firebaseConfig)
+    const auth = getAuth(app)
+    const db = getFirestore(app)
+
+    window.showSignup = function() {
+      document.getElementById('login-form').style.display = 'none'
+      document.getElementById('signup-form').style.display = 'block'
+    }
+
+    window.showLogin = function() {
+      document.getElementById('signup-form').style.display = 'none'
+      document.getElementById('login-form').style.display = 'block'
+    }
+
+    window.loginUser = async function() {
+      const email = document.getElementById('login-email').value
+      const password = document.getElementById('login-password').value
+
+      if(email === '' || password === '') {
+        alert('Please fill all fields!')
+        return
+      }
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password)
+        alert('Login successful! 🎉')
+        window.location.href = 'viva.html'
+      } catch(error) {
+        alert('Error: ' + error.message)
+      }
+    }
+
+    window.signupUser = async function() {
+      const name = document.getElementById('signup-name').value
+      const email = document.getElementById('signup-email').value
+      const password = document.getElementById('signup-password').value
+
+      if(name === '' || email === '' || password === '') {
+        alert('Please fill all fields!')
+        return
+      }
+
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+        const user = userCredential.user
+
+        await setDoc(doc(db, 'users', user.uid), {
+          name: name,
+          email: email,
+          createdAt: new Date().toISOString()
+        })
+
+        alert('Account created successfully! 🎉')
+        window.location.href = 'viva.html'
+      } catch(error) {
+        alert('Error: ' + error.message)
+      }
+    }
+  </script>
+
+</body>
+</html>

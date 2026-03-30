@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VivaIQ — Simulator</title>
+  <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #080b14; font-family: 'Segoe UI', sans-serif; min-height: 100vh; color: white; }
+    .navbar { display: flex; align-items: center; justify-content: space-between; padding: 16px 32px; background: #0d1220; border-bottom: 1px solid #1e2a42; }
+    .navbar h1 { font-size: 24px; font-weight: 800; background: linear-gradient(135deg, #ffffff, #00e5ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .navbar-right { display: flex; align-items: center; gap: 16px; }
+    .user-badge { background: #141929; border: 1px solid #1e2a42; border-radius: 8px; padding: 8px 16px; font-size: 13px; color: #00e5ff; }
+    .logout-btn { background: transparent; border: 1px solid #1e2a42; border-radius: 8px; padding: 8px 16px; color: #6b7a9e; font-size: 13px; cursor: pointer; }
+    .logout-btn:hover { border-color: #ff3d71; color: #ff3d71; }
+    #landing-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: calc(100vh - 65px); padding: 24px; }
+    .hero { text-align: center; margin-bottom: 48px; }
+    .hero h2 { font-size: 48px; font-weight: 800; background: linear-gradient(135deg, #ffffff, #a259ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 12px; }
+    .hero p { color: #6b7a9e; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; }
+    .config-card { background: #0d1220; border: 1px solid #1e2a42; border-radius: 20px; padding: 40px; width: 100%; max-width: 540px; }
+    .section-label { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #6b7a9e; margin-bottom: 12px; }
+    .config-section { margin-bottom: 28px; }
+    .subject-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .subject-btn { background: #141929; border: 1px solid #1e2a42; border-radius: 10px; padding: 14px 16px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; text-align: left; transition: all 0.2s; }
+    .subject-btn:hover { border-color: #00e5ff; color: #00e5ff; }
+    .subject-btn.selected { background: rgba(0,229,255,0.08); border-color: #00e5ff; color: #00e5ff; }
+    .custom-input { width: 100%; background: #141929; border: 1px solid #1e2a42; border-radius: 10px; padding: 14px 16px; color: white; font-size: 13px; outline: none; margin-top: 10px; }
+    .custom-input:focus { border-color: #00e5ff; }
+    .diff-row { display: flex; gap: 8px; }
+    .diff-btn { flex: 1; background: #141929; border: 1px solid #1e2a42; border-radius: 8px; padding: 10px; color: #6b7a9e; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
+    .diff-btn.selected.easy { background: rgba(0,255,148,0.1); border-color: #00ff94; color: #00ff94; }
+    .diff-btn.selected.medium { background: rgba(255,209,102,0.1); border-color: #ffd166; color: #ffd166; }
+    .diff-btn.selected.hard { background: rgba(255,61,113,0.1); border-color: #ff3d71; color: #ff3d71; }
+    .diff-btn.selected.demo { background: rgba(162,89,255,0.1); border-color: #a259ff; color: #a259ff; }
+    .examiner-row { display: flex; gap: 8px; }
+    .examiner-btn { flex: 1; background: #141929; border: 1px solid #1e2a42; border-radius: 10px; padding: 12px; cursor: pointer; text-align: center; transition: all 0.2s; }
+    .examiner-btn .icon { font-size: 22px; display: block; margin-bottom: 4px; }
+    .examiner-btn .name { font-size: 12px; font-weight: 700; color: white; display: block; }
+    .examiner-btn .desc { font-size: 10px; color: #6b7a9e; display: block; margin-top: 2px; }
+    .examiner-btn:hover { border-color: #a259ff; }
+    .examiner-btn.selected { background: rgba(162,89,255,0.1); border-color: #a259ff; }
+    .start-btn { width: 100%; background: linear-gradient(135deg, #00e5ff, #a259ff); border: none; border-radius: 12px; padding: 18px; color: #000; font-size: 16px; font-weight: 800; cursor: pointer; letter-spacing: 1px; text-transform: uppercase; transition: all 0.2s; }
+    .start-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,229,255,0.3); }
+    .start-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    #viva-screen { padding: 24px; }
+    .viva-header { display: flex; justify-content: space-between; align-items: center; background: #0d1220; border: 1px solid #1e2a42; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; max-width: 800px; margin-left: auto; margin-right: auto; }
+    .viva-left { display: flex; align-items: center; gap: 16px; }
+    .subject-tag { background: rgba(0,229,255,0.08); border: 1px solid rgba(0,229,255,0.2); border-radius: 4px; padding: 4px 10px; font-size: 10px; letter-spacing: 2px; color: #00e5ff; text-transform: uppercase; }
+    .q-counter { font-size: 12px; color: #6b7a9e; }
+    .score-display { font-size: 14px; color: #ffd166; font-weight: 700; }
+    .viva-inner { max-width: 800px; margin: 0 auto; }
+    .timer-section { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+    .timer-bar-wrap { flex: 1; background: #141929; border-radius: 4px; height: 6px; overflow: hidden; }
+    .timer-bar { height: 100%; background: linear-gradient(90deg, #00e5ff, #a259ff); transition: width 1s linear; border-radius: 4px; }
+    .timer-bar.danger { background: #ff3d71; }
+    .timer-text { font-size: 20px; font-weight: 700; color: #00e5ff; min-width: 50px; text-align: right; }
+    .timer-text.danger { color: #ff3d71; }
+    .webcam-row { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; background: #0d1220; border: 1px solid #1e2a42; border-radius: 12px; padding: 16px; }
+    .webcam-box { position: relative; width: 140px; height: 100px; border-radius: 10px; overflow: hidden; border: 2px solid #1e2a42; flex-shrink: 0; background: #141929; }
+    .webcam-box video { width: 100%; height: 100%; object-fit: cover; }
+    .webcam-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 4px; }
+    .webcam-placeholder span { font-size: 24px; }
+    .webcam-placeholder p { font-size: 9px; color: #6b7a9e; text-align: center; }
+    .face-badge { position: absolute; bottom: 4px; left: 4px; background: rgba(0,255,148,0.2); border: 1px solid rgba(0,255,148,0.3); color: #00ff94; font-size: 9px; padding: 2px 6px; border-radius: 3px; font-weight: 700; }
+    .face-badge.off { background: rgba(255,61,113,0.2); border-color: rgba(255,61,113,0.3); color: #ff3d71; }
+    .webcam-info { flex: 1; }
+    .webcam-info .cam-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #6b7a9e; margin-bottom: 6px; }
+    .webcam-info .cam-status { font-size: 14px; font-weight: 700; color: #00ff94; margin-bottom: 4px; }
+    .webcam-info .cam-hint { font-size: 11px; color: #6b7a9e; }
+    .ac-panel { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .ac-badge { display: flex; align-items: center; gap: 6px; background: #0d1220; border: 1px solid #1e2a42; border-radius: 8px; padding: 8px 12px; font-size: 10px; letter-spacing: 1px; color: #6b7a9e; }
+    .ac-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: #00ff94; box-shadow: 0 0 6px #00ff94; }
+    .ac-badge.warning { border-color: #ff3d71; color: #ff3d71; }
+    .ac-badge.warning .dot { background: #ff3d71; box-shadow: 0 0 6px #ff3d71; }
+    .question-card { background: #0d1220; border: 1px solid #1e2a42; border-radius: 16px; padding: 28px; margin-bottom: 20px; }
+    .examiner-label { font-size: 11px; letter-spacing: 2px; color: #6b7a9e; text-transform: uppercase; margin-bottom: 16px; }
+    .examiner-label span { color: #a259ff; }
+    .question-text { font-size: 20px; font-weight: 700; line-height: 1.5; }
+    .violation-overlay { background: rgba(255,61,113,0.08); border: 2px solid #ff3d71; border-radius: 12px; padding: 28px; text-align: center; margin-bottom: 20px; display: none; }
+    .violation-overlay h3 { color: #ff3d71; font-size: 20px; margin-bottom: 10px; }
+    .violation-overlay p { color: #aaa; font-size: 13px; margin-bottom: 20px; line-height: 1.6; }
+    .skip-btn { background: rgba(255,61,113,0.15); border: 1px solid #ff3d71; border-radius: 8px; padding: 12px 28px; color: #ff3d71; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .skip-btn:hover { background: rgba(255,61,113,0.25); }
+    .answer-area { margin-bottom: 20px; }
+    #answer-input { width: 100%; background: #0d1220; border: 1px solid #1e2a42; border-radius: 12px; padding: 20px; color: white; font-size: 14px; line-height: 1.7; outline: none; resize: none; margin-bottom: 12px; }
+    #answer-input:focus { border-color: #00e5ff; }
+    .answer-btns { display: flex; gap: 10px; }
+    .voice-btn { background: #141929; border: 1px solid #1e2a42; border-radius: 10px; padding: 12px 20px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .voice-btn:hover { border-color: #a259ff; color: #a259ff; }
+    .voice-btn.recording { border-color: #ff3d71; color: #ff3d71; }
+    .submit-btn { flex: 1; background: linear-gradient(135deg, #00e5ff, #a259ff); border: none; border-radius: 10px; padding: 14px; color: #000; font-size: 14px; font-weight: 800; cursor: pointer; transition: all 0.2s; }
+    .submit-btn:hover { transform: translateY(-1px); }
+    .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .feedback-card { background: #0d1220; border: 1px solid #1e2a42; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+    .feedback-header { display: flex; justify-content: space-between; align-items: center; font-size: 11px; letter-spacing: 2px; color: #6b7a9e; text-transform: uppercase; margin-bottom: 12px; }
+    .feedback-pill { padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+    .feedback-text { font-size: 14px; line-height: 1.7; color: #e8edf8; }
+    .toast { position: fixed; top: 20px; right: 20px; background: rgba(255,61,113,0.15); border: 1px solid #ff3d71; border-radius: 10px; padding: 14px 20px; font-size: 12px; color: #ff3d71; z-index: 9999; display: none; max-width: 300px; }
+  </style>
+</head>
+<body>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="navbar">
+    <h1>VivaIQ</h1>
+    <div class="navbar-right">
+      <div class="user-badge" id="user-badge">👤 Loading...</div>
+      <button class="logout-btn" onclick="logoutUser()">Logout</button>
+    </div>
+  </div>
+
+  <!-- LANDING -->
+  <div id="landing-screen">
+    <div class="hero">
+      <h2>Start Your Viva</h2>
+      <p> Select subject and begin simulation</p>
+    </div>
+    <div class="config-card">
+      <div class="config-section">
+        <div class="section-label">Select Subject</div>
+        <div class="subject-grid">
+          <button class="subject-btn" data-subject="Computer Science" onclick="selectSubject(this)">💻 CS / Programming</button>
+          <button class="subject-btn" data-subject="Data Structures" onclick="selectSubject(this)">🌲 DS & Algorithms</button>
+          <button class="subject-btn" data-subject="Artificial Intelligence" onclick="selectSubject(this)">🤖 AI / ML</button>
+          <button class="subject-btn" data-subject="Mathematics" onclick="selectSubject(this)">📐 Mathematics</button>
+          <button class="subject-btn" data-subject="Physics" onclick="selectSubject(this)">⚛️ Physics</button>
+          <button class="subject-btn" data-subject="Networking" onclick="selectSubject(this)">🌐 Networking</button>
+          <button class="subject-btn" data-subject="Database" onclick="selectSubject(this)">🗄️ Database / DBMS</button>
+          <button class="subject-btn" data-subject="Operating System" onclick="selectSubject(this)">🖥️ Operating System</button>
+          <button class="subject-btn" data-subject="Software Engineering" onclick="selectSubject(this)">⚙️ Software Engg</button>
+          <button class="subject-btn" data-subject="Web Development" onclick="selectSubject(this)">🕸️ Web Development</button>
+          <button class="subject-btn" data-subject="Cyber Security" onclick="selectSubject(this)">🔐 Cyber Security</button>
+          <button class="subject-btn" data-subject="custom" onclick="selectSubject(this)">✏️ Other Subject</button>
+        </div>
+        <input class="custom-input" id="custom-subject" placeholder="Type your subject here..." style="display:none;" />
+      </div>
+      <div class="config-section">
+        <div class="section-label">Difficulty Level</div>
+        <div class="diff-row">
+          <button class="diff-btn easy" onclick="selectDiff(this,'easy')">Easy</button>
+          <button class="diff-btn selected medium" onclick="selectDiff(this,'medium')">Medium</button>
+          <button class="diff-btn hard" onclick="selectDiff(this,'hard')">Hard</button>
+          <button class="diff-btn demo" onclick="selectDiff(this,'demo')"> Demo</button>
+        </div>
+      </div>
+      <div class="config-section">
+        <div class="section-label">Examiner Style</div>
+        <div class="examiner-row">
+          <div class="examiner-btn selected" data-style="strict" onclick="selectExaminer(this)">
+            <span class="icon"></span><span class="name">Strict</span><span class="desc">No mercy</span>
+          </div>
+          <div class="examiner-btn" data-style="friendly" onclick="selectExaminer(this)">
+            <span class="icon"></span><span class="name">Friendly</span><span class="desc">Encouraging</span>
+          </div>
+          <div class="examiner-btn" data-style="industry" onclick="selectExaminer(this)">
+            <span class="icon"></span><span class="name">Industry</span><span class="desc">Real-world</span>
+          </div>
+        </div>
+      </div>
+      <button class="start-btn" id="start-btn" onclick="startViva()" disabled>🚀 Begin Viva Session</button>
+    </div>
+  </div>
+
+  <!-- VIVA SCREEN -->
+  <div id="viva-screen" style="display:none;">
+    <div class="viva-header">
+      <div class="viva-left">
+        <div class="subject-tag" id="viva-subject-tag">CS</div>
+        <div class="q-counter" id="q-counter">Q 1 / 5</div>
+      </div>
+      <div class="score-display" id="score-display">Score: 0</div>
+    </div>
+    <div class="viva-inner">
+      <div class="timer-section">
+        <div class="timer-bar-wrap"><div class="timer-bar" id="timer-bar" style="width:100%"></div></div>
+        <div class="timer-text" id="timer-text">90s</div>
+      </div>
+      <div class="webcam-row">
+        <div class="webcam-box" id="webcam-box">
+          <div class="webcam-placeholder" id="webcam-placeholder"><span>📷</span><p>Starting...</p></div>
+          <video id="webcam-video" autoplay muted playsinline style="display:none;"></video>
+          <div class="face-badge" id="face-badge">● FACE ON</div>
+        </div>
+        <div class="webcam-info">
+          <div class="cam-label">Camera Status</div>
+          <div class="cam-status" id="cam-status">🟢 Active</div>
+          <div class="cam-hint">Stay in frame during your viva</div>
+        </div>
+      </div>
+      <div class="ac-panel">
+        <div class="ac-badge" id="ac-tab"><span class="dot"></span>TAB MONITOR</div>
+        <div class="ac-badge" id="ac-copy"><span class="dot"></span>COPY BLOCK</div>
+        <div class="ac-badge" id="ac-cam"><span class="dot"></span>FACE DETECT</div>
+        <div class="ac-badge" id="ac-time"><span class="dot"></span>TIME TRACK</div>
+      </div>
+      <div class="question-card">
+        <div class="examiner-label">Examiner: <span id="examiner-name">Strict Professor</span></div>
+        <div class="question-text" id="question-text">Loading...</div>
+      </div>
+      <div class="violation-overlay" id="violation-overlay">
+        <h3>⚠️ Violation Detected!</h3>
+        <p id="violation-msg">Cheating activity detected. This question gets 0 marks and is skipped.</p>
+        <button class="skip-btn" onclick="nextQuestion()">Continue to Next Question →</button>
+      </div>
+      <div class="answer-area" id="answer-area">
+        <textarea id="answer-input" placeholder="Type your answer here..." rows="5" onpaste="return blockPaste(event)"></textarea>
+        <div class="answer-btns">
+          <button class="voice-btn" id="voice-btn" onclick="toggleVoice()">🎙️ Voice Answer</button>
+          <button class="submit-btn" id="submit-btn" onclick="submitAnswer()">Submit Answer →</button>
+        </div>
+      </div>
+      <div class="feedback-card" id="feedback-card" style="display:none;">
+        <div class="feedback-header">AI Feedback <span class="feedback-pill" id="feedback-pill">0/10</span></div>
+        <div class="feedback-text" id="feedback-text"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, addDoc, collection } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAzVeBAh3N9F2aFW422YZ_6mcXwlYcyf3E",
+      authDomain: "vivaiq-24c89.firebaseapp.com",
+      projectId: "vivaiq-24c89",
+      storageBucket: "vivaiq-24c89.firebasestorage.app",
+      messagingSenderId: "356031432226",
+      appId: "1:356031432226:web:d9363105d8a7bcdbc9ac7b"
+    };
+
+    const app = initializeApp(firebaseConfig)
+    const auth = getAuth(app)
+    const db = getFirestore(app)
+    let currentUser = null
+    let cameraStream = null
+    let faceCheckInterval = null
+
+    onAuthStateChanged(auth, async (user) => {
+      if(user) {
+        currentUser = user
+        const docSnap = await getDoc(doc(db, 'users', user.uid))
+        if(docSnap.exists()) document.getElementById('user-badge').textContent = '👤 ' + docSnap.data().name
+      } else {
+        window.location.href = 'index.html'
+      }
+    })
+
+    window.logoutUser = async function() {
+      if(cameraStream) cameraStream.getTracks().forEach(t => t.stop())
+      await signOut(auth)
+      window.location.href = 'index.html'
+    }
+
+    // =============================================
+    // QUESTION BANK — All Subjects
+    // =============================================
+    const questions = {
+
+      "Computer Science": {
+        easy: [
+          "What is the difference between a compiler and an interpreter?",
+          "What is OOP? Name its four pillars.",
+          "What is a variable and how does it differ from a constant?",
+          "What is a function and why do we use it?",
+          "What is the difference between == and === in programming?",
+          "What is a loop? Name three types of loops.",
+          "What is an array? How is it different from a single variable?",
+          "What is a class and what is an object?",
+          "What is debugging and why is it important?",
+          "What is an IDE? Give two examples."
+        ],
+        medium: [
+          "Explain pass by value vs pass by reference with an example.",
+          "What is recursion? Explain with an example and mention base case.",
+          "What is an API and how does REST differ from GraphQL?",
+          "What is the difference between synchronous and asynchronous programming?",
+          "What is exception handling? Explain try-catch-finally.",
+          "What is the difference between stack memory and heap memory?",
+          "Explain the concept of polymorphism with a real world example.",
+          "What is a design pattern? Explain the Singleton pattern.",
+          "What is version control and why is Git important?",
+          "What is multithreading and what problems can it cause?"
+        ],
+        hard: [
+          "Explain closures in JavaScript and how they relate to lexical scope.",
+          "What is a race condition? How would you prevent it using mutex?",
+          "Describe the SOLID principles and give an example of each.",
+          "Explain memory management and what causes a memory leak.",
+          "What is dependency injection and why is it used?",
+          "Explain the difference between monolithic and microservices architecture.",
+          "What is a deadlock? How can it be prevented?",
+          "Explain the CAP theorem in distributed systems.",
+          "What is garbage collection? Compare JVM and Python GC strategies.",
+          "Explain event-driven architecture and when you would use it."
+        ],
+        demo: [
+          "What is a computer program?",
+          "What is HTML?",
+          "What is CSS?",
+          "What is JavaScript?",
+          "What does a programmer do?"
+        ]
+      },
+
+      "Data Structures": {
+        easy: [
+          "What is the difference between an array and a linked list?",
+          "What is a stack and where is it used?",
+          "What is Big O notation and why is it important?",
+          "What is a queue? Give a real world example.",
+          "What is a binary tree?",
+          "What is the difference between linear and non-linear data structures?",
+          "What is a node in a data structure?",
+          "What is the difference between a singly and doubly linked list?",
+          "What is a circular queue?",
+          "What is a priority queue?"
+        ],
+        medium: [
+          "Explain BFS vs DFS and when to use each.",
+          "What is a hash table? Explain collision resolution strategies.",
+          "Explain quicksort and its average vs worst case time complexity.",
+          "What is dynamic programming and how is it different from divide and conquer?",
+          "Explain the difference between min-heap and max-heap.",
+          "What is a balanced binary search tree? Why is balance important?",
+          "What is the difference between merge sort and insertion sort?",
+          "Explain how a graph is represented using adjacency matrix vs adjacency list.",
+          "What is memoization and how does it improve recursive algorithms?",
+          "What is a trie and what problems does it solve?"
+        ],
+        hard: [
+          "Explain Dijkstra's algorithm step by step. What happens with negative weights?",
+          "What is the difference between NP, NP-hard and NP-complete problems?",
+          "Explain amortized analysis using a dynamic array as an example.",
+          "What is a segment tree and when would you use it?",
+          "Explain the Floyd-Warshall algorithm and its time complexity.",
+          "What is a red-black tree and how does it maintain balance?",
+          "Explain the Bellman-Ford algorithm and compare it with Dijkstra.",
+          "What is a B-tree and why is it used in databases?",
+          "Explain the concept of hashing with open addressing vs separate chaining.",
+          "What is a suffix array and what is it used for?"
+        ],
+        demo: [
+          "What is a data structure?",
+          "What is a linked list?",
+          "What is sorting?",
+          "What is a binary tree?",
+          "What is searching in data structures?"
+        ]
+      },
+
+      "Artificial Intelligence": {
+        easy: [
+          "What is the difference between supervised and unsupervised learning?",
+          "What is overfitting and how can you detect it?",
+          "What is gradient descent in simple terms?",
+          "What is a training dataset?",
+          "What is the difference between AI, ML, and deep learning?",
+          "What is a classification problem? Give an example.",
+          "What is a regression problem? Give an example.",
+          "What is a label in machine learning?",
+          "What is a feature in machine learning?",
+          "What is a confusion matrix?"
+        ],
+        medium: [
+          "Explain the bias-variance tradeoff and how it affects model selection.",
+          "What is backpropagation and how does it work in a neural network?",
+          "What is regularization? Compare L1 and L2 regularization.",
+          "Explain the difference between bagging and boosting with examples.",
+          "What is cross-validation and why is it used?",
+          "Explain the difference between precision and recall.",
+          "What is a decision tree and how does it make predictions?",
+          "What is the difference between batch gradient descent and stochastic gradient descent?",
+          "What is transfer learning and when is it useful?",
+          "What is the purpose of an activation function in neural networks?"
+        ],
+        hard: [
+          "Explain the vanishing gradient problem and how modern architectures solve it.",
+          "What is a GAN? Explain training dynamics and common failure modes.",
+          "Explain the attention mechanism in transformers and why it replaced RNNs.",
+          "What is reinforcement learning? Explain the exploration-exploitation dilemma.",
+          "Explain LSTM networks and how they solve the vanishing gradient problem.",
+          "What is the difference between generative and discriminative models?",
+          "Explain the Word2Vec model and how word embeddings are learned.",
+          "What is model distillation and why is it used?",
+          "Explain the architecture of a Convolutional Neural Network (CNN).",
+          "What is federated learning and what privacy benefits does it offer?"
+        ],
+        demo: [
+          "What is Artificial Intelligence?",
+          "What is machine learning?",
+          "What is a neural network?",
+          "What is deep learning?",
+          "Give one real world example of AI."
+        ]
+      },
+
+      "Mathematics": {
+        easy: [
+          "What is a prime number? Give three examples.",
+          "What is the difference between rational and irrational numbers?",
+          "What is a function in mathematics? Give an example.",
+          "What is the Pythagorean theorem?",
+          "What is the difference between mean, median, and mode?",
+          "What is a matrix? What is its order?",
+          "What is factorial and how is it calculated?",
+          "What is the difference between permutation and combination?",
+          "What is probability? What is its range?",
+          "What is a set? Define union and intersection."
+        ],
+        medium: [
+          "What is a derivative and what does it represent geometrically?",
+          "Explain the chain rule in differentiation with an example.",
+          "What is integration? How is it related to differentiation?",
+          "What is a determinant of a matrix? When is it zero?",
+          "Explain Bayes theorem with a real world example.",
+          "What is a limit in calculus? Give an example.",
+          "What is the difference between eigenvalues and eigenvectors?",
+          "What is a normal distribution and what are its properties?",
+          "Explain the binomial theorem and give an example.",
+          "What is modular arithmetic and where is it applied?"
+        ],
+        hard: [
+          "Prove that the square root of 2 is irrational.",
+          "What is a Fourier transform and what is it used for?",
+          "Explain the Fundamental Theorem of Calculus.",
+          "What is linear independence in vector spaces?",
+          "Explain the concept of convexity in optimization.",
+          "What is a differential equation and give a real world application.",
+          "Explain the Lagrange multiplier method.",
+          "What is a Taylor series and when does it converge?",
+          "Explain the concept of entropy in information theory.",
+          "What is the difference between NP and P problems in complexity theory?"
+        ],
+        demo: [
+          "What is addition and subtraction?",
+          "What is a fraction?",
+          "What is a percentage?",
+          "What is an equation?",
+          "What is a graph in mathematics?"
+        ]
+      },
+
+      "Physics": {
+        easy: [
+          "What is Newton's first law of motion?",
+          "What is the difference between speed and velocity?",
+          "What is acceleration? Give its formula.",
+          "What is the difference between mass and weight?",
+          "What is kinetic energy and what is potential energy?",
+          "What is Ohm's law?",
+          "What is the difference between a conductor and an insulator?",
+          "What is frequency and wavelength of a wave?",
+          "What is the speed of light?",
+          "What is gravity?"
+        ],
+        medium: [
+          "Explain Newton's three laws of motion with examples.",
+          "What is the law of conservation of energy?",
+          "Explain the concept of electric field and magnetic field.",
+          "What is Faraday's law of electromagnetic induction?",
+          "What is the difference between transverse and longitudinal waves?",
+          "Explain the photoelectric effect.",
+          "What is Kirchhoff's voltage and current law?",
+          "What is the Doppler effect? Give an example.",
+          "What is simple harmonic motion?",
+          "What is the difference between series and parallel circuits?"
+        ],
+        hard: [
+          "Explain Einstein's theory of special relativity.",
+          "What is quantum mechanics and how does it differ from classical mechanics?",
+          "Explain the wave-particle duality of light.",
+          "What is Heisenberg's uncertainty principle?",
+          "Explain the concept of entropy in thermodynamics.",
+          "What is nuclear fission and fusion? Compare their energy outputs.",
+          "What are Maxwell's equations and what do they describe?",
+          "Explain the concept of superconductivity.",
+          "What is dark matter and why do physicists believe it exists?",
+          "Explain the Pauli exclusion principle."
+        ],
+        demo: [
+          "What is physics?",
+          "What is force?",
+          "What is energy?",
+          "What is electricity?",
+          "What is a wave?"
+        ]
+      },
+
+      "Networking": {
+        easy: [
+          "What is the difference between LAN, WAN, and MAN?",
+          "What is an IP address? What is the difference between IPv4 and IPv6?",
+          "What is a MAC address?",
+          "What is a router and what does it do?",
+          "What is the difference between HTTP and HTTPS?",
+          "What is DNS and what does it do?",
+          "What is a firewall?",
+          "What is bandwidth?",
+          "What is the difference between a hub and a switch?",
+          "What is Wi-Fi and how does it work?"
+        ],
+        medium: [
+          "Explain the OSI model and its seven layers.",
+          "What is the TCP/IP model? How does it differ from OSI?",
+          "What is the three-way handshake in TCP?",
+          "What is NAT and why is it used?",
+          "What is the difference between TCP and UDP?",
+          "What is subnetting? Calculate the subnet mask for /24.",
+          "What is ARP and how does it work?",
+          "What is DHCP and why is it used?",
+          "What is the difference between symmetric and asymmetric encryption?",
+          "What is a VPN and how does it provide security?"
+        ],
+        hard: [
+          "Explain the BGP protocol and how internet routing works.",
+          "What is OSPF and how does it differ from RIP?",
+          "Explain SSL/TLS handshake process in detail.",
+          "What is a DDoS attack and how can it be mitigated?",
+          "Explain the concept of Quality of Service (QoS) in networking.",
+          "What is SDN (Software Defined Networking) and its advantages?",
+          "Explain MPLS and its role in modern networking.",
+          "What is a man-in-the-middle attack and how to prevent it?",
+          "What is network congestion control in TCP?",
+          "Explain the difference between stateful and stateless firewalls."
+        ],
+        demo: [
+          "What is the internet?",
+          "What is a network?",
+          "What is an IP address?",
+          "What is a website?",
+          "What is email?"
+        ]
+      },
+
+      "Database": {
+        easy: [
+          "What is a database and why do we use it?",
+          "What is the difference between SQL and NoSQL?",
+          "What is a primary key?",
+          "What is a foreign key?",
+          "What is a table in a relational database?",
+          "What is SELECT statement in SQL?",
+          "What is the difference between DELETE and DROP in SQL?",
+          "What is a NULL value in SQL?",
+          "What is an index in a database?",
+          "What is CRUD?"
+        ],
+        medium: [
+          "What are the ACID properties of a database transaction?",
+          "What is normalization? Explain 1NF, 2NF, and 3NF.",
+          "What is a JOIN in SQL? Explain INNER, LEFT, and RIGHT JOIN.",
+          "What is a stored procedure and what are its advantages?",
+          "What is the difference between WHERE and HAVING in SQL?",
+          "What is a view in SQL?",
+          "What is database indexing and how does it improve performance?",
+          "What is the difference between clustered and non-clustered index?",
+          "Explain the concept of database transactions.",
+          "What is denormalization and when is it used?"
+        ],
+        hard: [
+          "Explain database concurrency control and locking mechanisms.",
+          "What is the difference between optimistic and pessimistic locking?",
+          "Explain the CAP theorem in distributed databases.",
+          "What is database sharding and when is it used?",
+          "Explain the concept of MVCC in PostgreSQL.",
+          "What is a distributed database? What challenges does it face?",
+          "Explain the difference between OLTP and OLAP systems.",
+          "What is query optimization? How does a query planner work?",
+          "Explain the concept of eventual consistency.",
+          "What is a graph database? When would you use it over relational?"
+        ],
+        demo: [
+          "What is a database?",
+          "What is SQL?",
+          "What is a table?",
+          "What is a query?",
+          "What is data?"
+        ]
+      },
+
+      "Operating System": {
+        easy: [
+          "What is an operating system and name three examples?",
+          "What is a process and what is a thread?",
+          "What is the difference between primary and secondary memory?",
+          "What is a file system?",
+          "What is a kernel?",
+          "What is the difference between user mode and kernel mode?",
+          "What is virtual memory?",
+          "What is a system call?",
+          "What is multitasking?",
+          "What is a shell?"
+        ],
+        medium: [
+          "Explain the different CPU scheduling algorithms.",
+          "What is a deadlock? State the four necessary conditions.",
+          "What is paging in memory management?",
+          "What is segmentation in memory management?",
+          "What is the difference between process and thread?",
+          "Explain the producer-consumer problem.",
+          "What is a semaphore and how is it used?",
+          "What is thrashing in an operating system?",
+          "What is the difference between preemptive and non-preemptive scheduling?",
+          "What is inter-process communication (IPC)?"
+        ],
+        hard: [
+          "Explain the Banker's algorithm for deadlock avoidance.",
+          "What is the difference between demand paging and pre-paging?",
+          "Explain the working of a page replacement algorithm (LRU, FIFO, Optimal).",
+          "What is a microkernel architecture? Compare with monolithic kernel.",
+          "Explain RAID levels and their tradeoffs.",
+          "What is the difference between soft and hard real-time systems?",
+          "Explain memory-mapped I/O vs port-mapped I/O.",
+          "What is the Copy-on-Write mechanism?",
+          "Explain the difference between mutex and semaphore.",
+          "What is a hypervisor and what types exist?"
+        ],
+        demo: [
+          "What is an operating system?",
+          "What is Windows?",
+          "What is a file?",
+          "What is a folder?",
+          "What is RAM?"
+        ]
+      },
+
+      "Software Engineering": {
+        easy: [
+          "What is software engineering?",
+          "What is the software development life cycle (SDLC)?",
+          "What is the difference between waterfall and agile methodology?",
+          "What is a requirement in software engineering?",
+          "What is a use case diagram?",
+          "What is version control and why is it important?",
+          "What is the difference between black box and white box testing?",
+          "What is a bug and what is a feature?",
+          "What is documentation in software engineering?",
+          "What is a sprint in agile?"
+        ],
+        medium: [
+          "Explain the difference between functional and non-functional requirements.",
+          "What is a design pattern? Explain MVC pattern.",
+          "What is unit testing and integration testing?",
+          "What is continuous integration and continuous deployment (CI/CD)?",
+          "What is the difference between verification and validation?",
+          "Explain the concept of technical debt.",
+          "What is refactoring and why is it important?",
+          "What is a UML diagram? Name four types.",
+          "What is code review and what are its benefits?",
+          "What is software coupling and cohesion?"
+        ],
+        hard: [
+          "Explain SOLID principles with examples.",
+          "What is domain-driven design (DDD)?",
+          "What is the difference between microservices and SOA?",
+          "Explain test-driven development (TDD) and its benefits.",
+          "What is DevOps and how does it bridge development and operations?",
+          "Explain the concept of fault tolerance in software systems.",
+          "What is software entropy and how do you manage it?",
+          "Explain the event sourcing pattern.",
+          "What is Conway's Law and how does it affect software architecture?",
+          "What is chaos engineering?"
+        ],
+        demo: [
+          "What is software?",
+          "What is an app?",
+          "What is a developer?",
+          "What is a bug?",
+          "What is testing?"
+        ]
+      },
+
+      "Web Development": {
+        easy: [
+          "What is HTML and what is it used for?",
+          "What is CSS and how does it style a webpage?",
+          "What is JavaScript and what does it do on a webpage?",
+          "What is the difference between frontend and backend?",
+          "What is a web server?",
+          "What is a URL?",
+          "What is the difference between GET and POST requests?",
+          "What is responsive design?",
+          "What is a cookie and what is local storage?",
+          "What is a DOM?"
+        ],
+        medium: [
+          "Explain the difference between REST and GraphQL APIs.",
+          "What is AJAX and how does it work?",
+          "What is the difference between synchronous and asynchronous JavaScript?",
+          "What is a React component? Explain props and state.",
+          "What is the difference between SQL and NoSQL databases in web apps?",
+          "What is session management and authentication?",
+          "What is CORS and why does it exist?",
+          "Explain the box model in CSS.",
+          "What is webpack and why is it used?",
+          "What is the difference between server-side rendering and client-side rendering?"
+        ],
+        hard: [
+          "What is OAuth 2.0 and how does it work?",
+          "Explain the event loop in JavaScript and how it handles async operations.",
+          "What is WebSocket and when should you use it over HTTP?",
+          "Explain the concept of progressive web apps (PWAs).",
+          "What is service worker and how does it enable offline functionality?",
+          "Explain the critical rendering path in browsers.",
+          "What is Content Security Policy (CSP) and why is it important?",
+          "Explain the virtual DOM and how React uses it for performance.",
+          "What is GraphQL subscriptions and when are they useful?",
+          "What is micro-frontend architecture?"
+        ],
+        demo: [
+          "What is a website?",
+          "What is HTML?",
+          "What is CSS?",
+          "What is a browser?",
+          "What is the internet?"
+        ]
+      },
+
+      "Cyber Security": {
+        easy: [
+          "What is cyber security?",
+          "What is the difference between authentication and authorization?",
+          "What is a password and what makes it strong?",
+          "What is malware?",
+          "What is phishing?",
+          "What is a firewall?",
+          "What is encryption?",
+          "What is two-factor authentication?",
+          "What is a virus vs a worm?",
+          "What is a VPN?"
+        ],
+        medium: [
+          "What is the difference between symmetric and asymmetric encryption?",
+          "What is a SQL injection attack? How do you prevent it?",
+          "What is cross-site scripting (XSS)?",
+          "What is a man-in-the-middle attack?",
+          "What is a denial of service (DoS) attack?",
+          "What is public key infrastructure (PKI)?",
+          "What is the CIA triad in cyber security?",
+          "What is penetration testing?",
+          "What is a zero-day vulnerability?",
+          "What is social engineering in cyber security?"
+        ],
+        hard: [
+          "Explain the RSA encryption algorithm.",
+          "What is a buffer overflow attack and how is it exploited?",
+          "Explain the concept of defense in depth.",
+          "What is a rainbow table attack and how does salting prevent it?",
+          "Explain the OWASP Top 10 vulnerabilities.",
+          "What is a side-channel attack?",
+          "Explain the difference between IDS and IPS systems.",
+          "What is steganography?",
+          "Explain the concept of threat modeling.",
+          "What is the difference between black hat, white hat, and grey hat hackers?"
+        ],
+        demo: [
+          "What is a hacker?",
+          "What is a password?",
+          "What is virus in computer?",
+          "What is safe browsing?",
+          "What is data privacy?"
+        ]
+      }
+    }
+
+    // =============================================
+    // STATE
+    // =============================================
+    let state = {
+      subject: '', diff: 'medium', examiner: 'strict',
+      questions: [], currentQ: 0, score: 0,
+      answers: [], violations: [],
+      timerInterval: null, timeLeft: 90, totalTime: 90,
+      isRecording: false, recognition: null,
+      violationOnCurrentQ: false
+    }
+
+    window.selectSubject = function(btn) {
+      document.querySelectorAll('.subject-btn').forEach(b => b.classList.remove('selected'))
+      btn.classList.add('selected')
+      const ci = document.getElementById('custom-subject')
+      if(btn.dataset.subject === 'custom') {
+        ci.style.display = 'block'
+        state.subject = ''
+      } else {
+        ci.style.display = 'none'
+        state.subject = btn.dataset.subject
+      }
+      checkStart()
+    }
+
+    document.getElementById('custom-subject').addEventListener('input', function() {
+      state.subject = this.value.trim()
+      checkStart()
+    })
+
+    window.selectDiff = function(btn, diff) {
+      document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('selected'))
+      btn.classList.add('selected')
+      state.diff = diff
+    }
+
+    window.selectExaminer = function(el) {
+      document.querySelectorAll('.examiner-btn').forEach(b => b.classList.remove('selected'))
+      el.classList.add('selected')
+      state.examiner = el.dataset.style
+    }
+
+    function checkStart() {
+      document.getElementById('start-btn').disabled = !state.subject
+    }
+
+    window.startViva = function() {
+      const bank = questions[state.subject]
+      let pool
+
+      if(bank) {
+        pool = bank[state.diff] || bank.medium
+      } else {
+        // Custom subject — generic smart questions
+        const s = state.subject
+        pool = [
+          `What is ${s} and why is it important?`,
+          `Explain the core concepts of ${s}.`,
+          `What are the main applications of ${s} in real life?`,
+          `What are the key challenges faced in ${s}?`,
+          `What are the fundamental principles of ${s}?`,
+          `How has ${s} evolved over time?`,
+          `What tools or techniques are commonly used in ${s}?`,
+          `Compare two major approaches or methods in ${s}.`,
+          `What is the future scope of ${s}?`,
+          `How is ${s} related to other fields of study?`
+        ]
+      }
+
+      state.questions = [...pool].sort(() => Math.random() - 0.5).slice(0, 5)
+      state.currentQ = 0
+      state.score = 0
+      state.answers = []
+      state.violations = []
+
+      document.getElementById('landing-screen').style.display = 'none'
+      document.getElementById('viva-screen').style.display = 'block'
+
+      setupAnticheat()
+      setupWebcam()
+      renderQuestion()
+    }
+
+    async function setupWebcam() {
+      try {
+        // Load face-api models
+        const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model'
+        await Promise.all([
+          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+          faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL)
+        ])
+
+        cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+        const video = document.getElementById('webcam-video')
+        const placeholder = document.getElementById('webcam-placeholder')
+        video.srcObject = cameraStream
+        video.style.display = 'block'
+        placeholder.style.display = 'none'
+
+        document.getElementById('cam-status').textContent = '🟢 Active'
+        document.getElementById('cam-status').style.color = '#00ff94'
+        document.getElementById('face-badge').textContent = '● FACE ON'
+        document.getElementById('face-badge').className = 'face-badge'
+
+        video.addEventListener('loadedmetadata', () => {
+          startFaceDetection(video)
+        })
+
+      } catch(e) {
+        document.getElementById('webcam-placeholder').innerHTML = '<span>🚫</span><p>Camera denied</p>'
+        document.getElementById('cam-status').textContent = '🔴 Camera Off'
+        document.getElementById('cam-status').style.color = '#ff3d71'
+        document.getElementById('face-badge').textContent = '● NO CAM'
+        document.getElementById('face-badge').className = 'face-badge off'
+        document.getElementById('ac-cam').classList.add('warning')
+        showToast('📷 Camera access denied!')
+      }
+    }
+
+    let faceWarningCount = 0
+    let faceDetectionLoop = null
+
+    function startFaceDetection(video) {
+      clearInterval(faceDetectionLoop)
+      faceWarningCount = 0
+
+      faceDetectionLoop = setInterval(async () => {
+        if(state.currentQ >= state.questions.length) return
+        if(state.violationOnCurrentQ) return
+
+        try {
+          const detection = await faceapi.detectSingleFace(
+            video,
+            new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 })
+          )
+
+          const faceBadge = document.getElementById('face-badge')
+          const camStatus = document.getElementById('cam-status')
+
+          if(detection) {
+            faceWarningCount = 0
+            faceBadge.textContent = '● FACE ON'
+            faceBadge.className = 'face-badge'
+            camStatus.textContent = '🟢 Face Detected'
+            camStatus.style.color = '#00ff94'
+          } else {
+            faceWarningCount++
+            faceBadge.textContent = '● FACE OFF'
+            faceBadge.className = 'face-badge off'
+            camStatus.style.color = '#ff3d71'
+
+            if(faceWarningCount === 1) {
+              camStatus.textContent = '⚠️ Face Missing!'
+              showToast('⚠️ Face not detected! Look at the camera.')
+            } else if(faceWarningCount >= 2) {
+              camStatus.textContent = '🔴 Violation!'
+              document.getElementById('ac-cam').classList.add('warning')
+              triggerViolation('cam', 'Face not detected on Q' + (state.currentQ+1) + '! Question skipped with 0 marks.')
+              faceWarningCount = 0
+            }
+          }
+        } catch(err) {
+          console.log('Face detection error:', err)
+        }
+      }, 3000)
+    }
+
+    function renderQuestion() {
+      state.violationOnCurrentQ = false
+      const q = state.questions[state.currentQ]
+      document.getElementById('viva-subject-tag').textContent = state.subject.slice(0,8).toUpperCase()
+      document.getElementById('q-counter').textContent = 'Q ' + (state.currentQ+1) + ' / ' + state.questions.length
+      document.getElementById('score-display').textContent = 'Score: ' + state.score
+      const names = { strict: 'Strict Professor', friendly: 'Friendly Mentor', industry: 'Industry Expert' }
+      document.getElementById('examiner-name').textContent = names[state.examiner]
+      document.getElementById('question-text').textContent = q
+      document.getElementById('answer-input').value = ''
+      document.getElementById('answer-input').classList.remove('flagged')
+      document.getElementById('feedback-card').style.display = 'none'
+      document.getElementById('violation-overlay').style.display = 'none'
+      document.getElementById('answer-area').style.display = 'block'
+      document.getElementById('submit-btn').textContent = 'Submit Answer →'
+      document.getElementById('submit-btn').onclick = submitAnswer
+      document.getElementById('submit-btn').disabled = false
+      startTimer()
+    }
+
+    function startTimer() {
+      clearInterval(state.timerInterval)
+      const times = { easy: 120, medium: 90, hard: 60, demo: 120 }
+      state.timeLeft = times[state.diff] || 90
+      state.totalTime = state.timeLeft
+      updateTimer()
+      state.timerInterval = setInterval(() => {
+        state.timeLeft--
+        updateTimer()
+        if(state.timeLeft <= 0) {
+          clearInterval(state.timerInterval)
+          showToast('⏰ Time up! Auto submitting...')
+          submitAnswer(true)
+        }
+      }, 1000)
+    }
+
+    function updateTimer() {
+      const pct = (state.timeLeft / state.totalTime) * 100
+      const bar = document.getElementById('timer-bar')
+      const txt = document.getElementById('timer-text')
+      bar.style.width = pct + '%'
+      txt.textContent = state.timeLeft + 's'
+      const danger = state.timeLeft < 15
+      bar.className = 'timer-bar' + (danger ? ' danger' : '')
+      txt.className = 'timer-text' + (danger ? ' danger' : '')
+    }
+
+    function setupAnticheat() {
+      document.addEventListener('visibilitychange', () => {
+        if(document.hidden && state.currentQ < state.questions.length) {
+          triggerViolation('tab', 'Tab switch detected! Q' + (state.currentQ+1) + ' skipped with 0 marks.')
+        }
+      })
+    }
+
+    function triggerViolation(type, msg) {
+      if(state.violationOnCurrentQ) return
+      state.violationOnCurrentQ = true
+      clearInterval(state.timerInterval)
+      if(state.isRecording) { state.recognition.stop(); state.isRecording = false }
+      state.violations.push(msg)
+      state.answers.push({ question: state.questions[state.currentQ], answer: '[SKIPPED — Violation]', score: 0 })
+      if(type === 'tab') document.getElementById('ac-tab').classList.add('warning')
+      if(type === 'paste') document.getElementById('ac-copy').classList.add('warning')
+      if(type === 'cam') document.getElementById('ac-cam').classList.add('warning')
+      if(type === 'time') document.getElementById('ac-time').classList.add('warning')
+      document.getElementById('answer-area').style.display = 'none'
+      document.getElementById('feedback-card').style.display = 'none'
+      document.getElementById('violation-overlay').style.display = 'block'
+      document.getElementById('violation-msg').textContent = msg
+      showToast('🚫 ' + msg)
+    }
+
+    window.blockPaste = function(e) {
+      e.preventDefault()
+      triggerViolation('paste', 'Paste attempt on Q' + (state.currentQ+1) + '! Question skipped with 0 marks.')
+      return false
+    }
+
+    window.toggleVoice = function() {
+      if(!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        showToast('Speech recognition not supported! Use Chrome.')
+        return
+      }
+      if(state.isRecording) {
+        state.recognition.stop()
+        state.isRecording = false
+        document.getElementById('voice-btn').classList.remove('recording')
+        document.getElementById('voice-btn').textContent = '🎙️ Voice Answer'
+        return
+      }
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+      state.recognition = new SR()
+      state.recognition.continuous = true
+      state.recognition.interimResults = true
+      state.recognition.onresult = (e) => {
+        let t = ''
+        for(let i=0; i<e.results.length; i++) t += e.results[i][0].transcript
+        document.getElementById('answer-input').value = t
+      }
+      state.recognition.start()
+      state.isRecording = true
+      document.getElementById('voice-btn').classList.add('recording')
+      document.getElementById('voice-btn').textContent = '🔴 Recording... (click to stop)'
+    }
+
+    // =============================================
+    // KEYWORD BANK — every question has keywords
+    // =============================================
+    const keywordBank = {
+      // COMPUTER SCIENCE
+      "What is the difference between a compiler and an interpreter?": ["compiler","interpreter","source code","machine code","executable","line by line","translate","runtime","error","syntax"],
+      "What is OOP? Name its four pillars.": ["oop","object","class","encapsulation","inheritance","polymorphism","abstraction","pillar","oriented","programming"],
+      "What is a variable and how does it differ from a constant?": ["variable","constant","value","change","store","memory","const","let","var","fixed"],
+      "What is a function and why do we use it?": ["function","reusable","parameter","return","call","block","code","dry","repeat","task"],
+      "What is the difference between == and === in programming?": ["==","===","strict","loose","type","value","equality","convert","comparison","javascript"],
+      "What is a loop? Name three types of loops.": ["loop","for","while","do","iteration","repeat","condition","increment","counter","cycle"],
+      "What is an array? How is it different from a single variable?": ["array","index","element","multiple","collection","single","variable","zero","store","list"],
+      "What is a class and what is an object?": ["class","object","instance","blueprint","property","method","template","create","new","attributes"],
+      "What is debugging and why is it important?": ["debug","bug","error","fix","test","breakpoint","code","trace","find","issue"],
+      "What is an IDE? Give two examples.": ["ide","integrated","development","environment","editor","compiler","vscode","intellij","eclipse","netbeans"],
+      "Explain pass by value vs pass by reference with an example.": ["pass","value","reference","copy","original","pointer","memory","primitive","object","modify"],
+      "What is recursion? Explain with an example and mention base case.": ["recursion","recursive","function","calls itself","base case","stack","factorial","infinite","return","depth"],
+      "What is an API and how does REST differ from GraphQL?": ["api","rest","graphql","endpoint","request","response","http","query","interface","data"],
+      "What is the difference between synchronous and asynchronous programming?": ["synchronous","asynchronous","async","await","promise","blocking","non-blocking","callback","thread","event"],
+      "What is exception handling? Explain try-catch-finally.": ["exception","try","catch","finally","error","throw","handle","runtime","block","crash"],
+      "What is the difference between stack memory and heap memory?": ["stack","heap","memory","allocation","static","dynamic","function","pointer","size","manage"],
+      "Explain the concept of polymorphism with a real world example.": ["polymorphism","method","override","overload","class","object","same","different","behavior","inherit"],
+      "What is a design pattern? Explain the Singleton pattern.": ["design","pattern","singleton","instance","one","global","class","reusable","solution","object"],
+      "What is version control and why is Git important?": ["version","control","git","commit","branch","merge","repository","track","history","collaborate"],
+      "What is multithreading and what problems can it cause?": ["multithreading","thread","concurrent","parallel","race condition","deadlock","synchronize","process","cpu","problem"],
+      // DATA STRUCTURES
+      "What is the difference between an array and a linked list?": ["array","linked list","node","pointer","index","contiguous","memory","access","insert","delete"],
+      "What is a stack and where is it used?": ["stack","lifo","last in first out","push","pop","top","function","undo","browser","call"],
+      "What is Big O notation and why is it important?": ["big o","complexity","time","space","efficient","notation","n","algorithm","worst","scale"],
+      "What is a queue? Give a real world example.": ["queue","fifo","first in first out","enqueue","dequeue","front","rear","printer","order","waiting"],
+      "What is a binary tree?": ["binary","tree","node","root","left","right","child","parent","leaf","height"],
+      "What is the difference between linear and non-linear data structures?": ["linear","non-linear","array","tree","graph","sequence","hierarchy","linked","structure","order"],
+      "What is the difference between a singly and doubly linked list?": ["singly","doubly","linked list","next","previous","pointer","node","direction","traverse","bidirectional"],
+      "What is a circular queue?": ["circular","queue","front","rear","wrap","overflow","round","buffer","connect","fifo"],
+      "What is a priority queue?": ["priority","queue","highest","lowest","heap","element","order","dequeue","weight","value"],
+      "Explain BFS vs DFS and when to use each.": ["bfs","dfs","breadth","depth","queue","stack","graph","tree","traverse","shortest path"],
+      "What is a hash table? Explain collision resolution strategies.": ["hash","table","collision","chaining","probing","key","value","function","index","bucket"],
+      "Explain quicksort and its average vs worst case time complexity.": ["quicksort","pivot","partition","sort","average","worst","o(n log n)","o(n2)","divide","conquer"],
+      "What is dynamic programming and how is it different from divide and conquer?": ["dynamic","programming","memoization","subproblem","overlapping","divide","conquer","optimal","cache","table"],
+      "Explain the difference between min-heap and max-heap.": ["min","max","heap","root","smallest","largest","priority","binary","complete","tree"],
+      "What is a balanced binary search tree? Why is balance important?": ["balanced","binary","search","tree","height","rotation","avl","red black","log n","efficiency"],
+      // AI / ML
+      "What is the difference between supervised and unsupervised learning?": ["supervised","unsupervised","label","unlabeled","classification","clustering","training","output","pattern","regression"],
+      "What is overfitting and how can you detect it?": ["overfitting","training","validation","accuracy","gap","generalize","regularization","dropout","noise","test"],
+      "What is gradient descent in simple terms?": ["gradient","descent","minimize","loss","learning rate","parameter","update","slope","optimize","error"],
+      "What is a training dataset?": ["training","dataset","data","label","model","learn","sample","input","output","fit"],
+      "What is the difference between AI, ML, and deep learning?": ["ai","machine learning","deep learning","artificial","neural","subset","data","algorithm","intelligence","model"],
+      "What is a classification problem? Give an example.": ["classification","class","label","category","predict","spam","email","output","discrete","example"],
+      "What is a regression problem? Give an example.": ["regression","continuous","predict","value","price","output","house","linear","model","numeric"],
+      "What is a label in machine learning?": ["label","output","target","class","supervised","annotate","correct","train","answer","y"],
+      "What is a feature in machine learning?": ["feature","input","variable","attribute","column","x","data","dimension","train","represent"],
+      "What is a confusion matrix?": ["confusion","matrix","true positive","false positive","true negative","false negative","precision","recall","accuracy","classification"],
+      "Explain the bias-variance tradeoff and how it affects model selection.": ["bias","variance","tradeoff","overfitting","underfitting","complexity","model","error","balance","generalize"],
+      "What is backpropagation and how does it work in a neural network?": ["backpropagation","gradient","weight","update","neural","network","error","chain rule","layer","train"],
+      "What is regularization? Compare L1 and L2 regularization.": ["regularization","l1","l2","lasso","ridge","penalty","overfitting","weight","lambda","shrink"],
+      "What is Artificial Intelligence?": ["artificial","intelligence","machine","human","learn","solve","problem","ai","simulate","computer"],
+      "What is machine learning?": ["machine","learning","data","algorithm","train","predict","model","pattern","improve","experience"],
+      "What is a neural network?": ["neural","network","neuron","layer","weight","activation","input","output","hidden","train"],
+      "What is deep learning?": ["deep","learning","neural","layer","hidden","feature","image","speech","gpu","model"],
+      "Give one real world example of AI.": ["ai","example","application","real","world","use","system","voice","recommendation","self-driving"],
+      // MATHEMATICS
+      "What is a prime number? Give three examples.": ["prime","divisor","factor","only","1","itself","2","7","13","natural"],
+      "What is the difference between rational and irrational numbers?": ["rational","irrational","fraction","decimal","repeating","non-repeating","pi","root","integer","express"],
+      "What is a function in mathematics? Give an example.": ["function","input","output","map","domain","range","f(x)","relation","unique","value"],
+      "What is the Pythagorean theorem?": ["pythagorean","hypotenuse","right","triangle","a2","b2","c2","square","formula","sides"],
+      "What is the difference between mean, median, and mode?": ["mean","median","mode","average","middle","frequent","sum","divide","sort","data"],
+      "What is a matrix? What is its order?": ["matrix","row","column","order","element","m x n","square","dimension","array","entry"],
+      "What is factorial and how is it calculated?": ["factorial","product","n!","multiply","zero","one","positive","integer","recursive","formula"],
+      "What is the difference between permutation and combination?": ["permutation","combination","order","arrange","select","choose","matter","n","r","formula"],
+      "What is probability? What is its range?": ["probability","event","outcome","favorable","range","0","1","chance","formula","total"],
+      "What is a set? Define union and intersection.": ["set","union","intersection","element","member","all","common","both","subset","empty"],
+      "What is a derivative and what does it represent geometrically?": ["derivative","slope","tangent","rate","change","differentiation","limit","function","geometric","curve"],
+      "What is integration? How is it related to differentiation?": ["integration","integral","area","curve","inverse","differentiation","antiderivative","fundamental","theorem","calculus"],
+      // PHYSICS
+      "What is Newton's first law of motion?": ["inertia","rest","motion","force","external","law","newton","first","object","velocity"],
+      "What is the difference between speed and velocity?": ["speed","velocity","scalar","vector","direction","magnitude","distance","displacement","time","rate"],
+      "What is acceleration? Give its formula.": ["acceleration","velocity","time","change","formula","a=v/t","rate","increase","decrease","m/s2"],
+      "What is the difference between mass and weight?": ["mass","weight","gravity","kg","newton","force","scalar","vector","kilogram","earth"],
+      "What is kinetic energy and what is potential energy?": ["kinetic","potential","energy","motion","position","joule","formula","mass","velocity","height"],
+      "What is Ohm's law?": ["ohm","voltage","current","resistance","v=ir","proportional","circuit","ampere","volt","law"],
+      "What is the difference between a conductor and an insulator?": ["conductor","insulator","electricity","flow","resist","copper","rubber","electron","material","charge"],
+      "What is frequency and wavelength of a wave?": ["frequency","wavelength","wave","cycle","hertz","lambda","inverse","speed","period","oscillation"],
+      "What is the speed of light?": ["light","speed","3 x 10^8","vacuum","c","electromagnetic","fast","constant","meter","second"],
+      "What is gravity?": ["gravity","force","mass","attract","earth","newton","acceleration","9.8","planet","weight"],
+      // NETWORKING
+      "What is the difference between LAN, WAN, and MAN?": ["lan","wan","man","local","wide","metropolitan","area","network","distance","coverage"],
+      "What is an IP address? What is the difference between IPv4 and IPv6?": ["ip","address","ipv4","ipv6","32","128","bit","unique","network","device"],
+      "What is a MAC address?": ["mac","address","physical","hardware","network","unique","48","bit","ethernet","device"],
+      "What is a router and what does it do?": ["router","route","packet","network","ip","forward","gateway","traffic","connect","direct"],
+      "What is the difference between HTTP and HTTPS?": ["http","https","secure","ssl","tls","encrypt","protocol","web","port","certificate"],
+      "What is DNS and what does it do?": ["dns","domain","name","ip","resolve","translate","server","address","lookup","system"],
+      "What is a firewall?": ["firewall","block","filter","traffic","network","security","rule","packet","protect","unauthorized"],
+      "What is bandwidth?": ["bandwidth","data","rate","speed","transfer","mbps","capacity","network","bits","per second"],
+      "What is the difference between a hub and a switch?": ["hub","switch","broadcast","unicast","mac","port","traffic","network","layer","smart"],
+      "Explain the OSI model and its seven layers.": ["osi","layer","physical","data link","network","transport","session","presentation","application","seven"],
+      "What is the difference between TCP and UDP?": ["tcp","udp","reliable","unreliable","connection","handshake","acknowledge","order","stream","datagram"],
+      "What is the three-way handshake in TCP?": ["syn","ack","three","way","handshake","connection","tcp","establish","synchronize","sequence"],
+      // DATABASE
+      "What is a database and why do we use it?": ["database","store","data","retrieve","manage","query","organized","efficient","system","record"],
+      "What is the difference between SQL and NoSQL?": ["sql","nosql","relational","table","schema","document","flexible","scale","structured","unstructured"],
+      "What is a primary key?": ["primary","key","unique","identify","null","row","table","constraint","each","record"],
+      "What is a foreign key?": ["foreign","key","reference","relation","table","link","constraint","parent","child","integrity"],
+      "What is a table in a relational database?": ["table","row","column","record","field","relation","data","store","grid","structure"],
+      "What is SELECT statement in SQL?": ["select","sql","query","from","where","column","table","retrieve","data","result"],
+      "What is the difference between DELETE and DROP in SQL?": ["delete","drop","row","table","data","structure","remove","rollback","truncate","dml"],
+      "What is CRUD?": ["crud","create","read","update","delete","insert","select","operation","database","basic"],
+      "What are the ACID properties of a database transaction?": ["acid","atomicity","consistency","isolation","durability","transaction","commit","rollback","property","reliable"],
+      "What is normalization? Explain 1NF, 2NF, and 3NF.": ["normalization","1nf","2nf","3nf","redundancy","dependency","atomic","key","table","normal form"],
+      "What is a JOIN in SQL? Explain INNER, LEFT, and RIGHT JOIN.": ["join","inner","left","right","table","match","null","combine","sql","result"],
+      // OPERATING SYSTEM
+      "What is an operating system and name three examples?": ["operating system","windows","linux","macos","kernel","hardware","software","manage","resource","process"],
+      "What is a process and what is a thread?": ["process","thread","execution","memory","lightweight","cpu","share","concurrent","program","task"],
+      "What is the difference between primary and secondary memory?": ["primary","secondary","ram","hard disk","volatile","non-volatile","fast","slow","storage","memory"],
+      "What is virtual memory?": ["virtual","memory","disk","swap","page","ram","extend","illusion","address","space"],
+      "What is a system call?": ["system","call","kernel","user","interface","request","service","os","mode","api"],
+      "What is multitasking?": ["multitasking","process","concurrent","cpu","switch","time","share","multiple","run","task"],
+      "What is a deadlock? State the four necessary conditions.": ["deadlock","mutual exclusion","hold and wait","no preemption","circular wait","condition","resource","block","process","four"],
+      "What is paging in memory management?": ["paging","page","frame","virtual","physical","memory","map","table","size","address"],
+      // SOFTWARE ENGINEERING
+      "What is software engineering?": ["software","engineering","develop","design","test","maintain","systematic","quality","process","lifecycle"],
+      "What is the software development life cycle (SDLC)?": ["sdlc","requirement","design","implement","test","deploy","maintain","phase","lifecycle","plan"],
+      "What is the difference between waterfall and agile methodology?": ["waterfall","agile","sequential","iterative","sprint","flexible","requirement","change","phase","deliver"],
+      "What is a requirement in software engineering?": ["requirement","functional","non-functional","feature","user","system","specification","need","document","define"],
+      "What is version control and why is it important?": ["version","control","git","track","history","branch","merge","collaborate","change","commit"],
+      "What is unit testing and integration testing?": ["unit","integration","test","function","component","module","combine","isolate","verify","bug"],
+      "What is a design pattern? Explain MVC pattern.": ["design","pattern","mvc","model","view","controller","architecture","separate","reusable","solution"],
+      // WEB DEVELOPMENT
+      "What is HTML and what is it used for?": ["html","tag","element","structure","heading","paragraph","page","markup","web","browser"],
+      "What is CSS and how does it style a webpage?": ["css","style","color","font","layout","selector","property","design","cascade","class"],
+      "What is JavaScript and what does it do on a webpage?": ["javascript","interactive","dynamic","dom","event","browser","function","script","client","behavior"],
+      "What is the difference between frontend and backend?": ["frontend","backend","client","server","html","css","javascript","database","api","logic"],
+      "What is a web server?": ["web","server","host","http","request","response","serve","file","port","apache"],
+      "What is the difference between GET and POST requests?": ["get","post","request","url","body","data","http","parameter","send","method"],
+      "What is responsive design?": ["responsive","design","mobile","screen","size","media query","flexible","layout","viewport","adapt"],
+      "What is a DOM?": ["dom","document","object","model","html","element","tree","manipulate","javascript","node"],
+      "Explain the difference between REST and GraphQL APIs.": ["rest","graphql","endpoint","query","flexible","over-fetch","single","multiple","api","data"],
+      // CYBER SECURITY
+      "What is cyber security?": ["cyber","security","protect","attack","network","data","system","threat","hack","defend"],
+      "What is the difference between authentication and authorization?": ["authentication","authorization","identity","verify","permission","access","who","what","login","role"],
+      "What is a password and what makes it strong?": ["password","strong","uppercase","lowercase","number","symbol","length","character","unique","complex"],
+      "What is malware?": ["malware","virus","trojan","ransomware","spyware","malicious","software","attack","infect","damage"],
+      "What is phishing?": ["phishing","email","fake","trick","credential","link","fraudulent","steal","password","social"],
+      "What is a firewall?": ["firewall","block","filter","packet","network","rule","traffic","protect","unauthorized","security"],
+      "What is encryption?": ["encrypt","decrypt","key","cipher","plaintext","ciphertext","aes","rsa","secure","algorithm"],
+      "What is two-factor authentication?": ["two","factor","authentication","otp","sms","code","second","verify","login","2fa"],
+      "What is a virus vs a worm?": ["virus","worm","spread","attach","self-replicate","host","program","network","infect","file"],
+      "What is the CIA triad in cyber security?": ["confidentiality","integrity","availability","cia","triad","protect","data","access","accurate","ensure"],
+      "What is a SQL injection attack? How do you prevent it?": ["sql","injection","input","malicious","query","database","parameterized","sanitize","prevent","attack"],
+      "What is the difference between symmetric and asymmetric encryption?": ["symmetric","asymmetric","key","same","public","private","aes","rsa","encrypt","decrypt"],
+      // DEMO
+      "What is HTML?": ["html","markup","tag","page","structure","web","element","browser","hypertext","language"],
+      "What is CSS used for?": ["css","style","color","font","layout","design","webpage","property","selector","cascade"],
+      "What is JavaScript?": ["javascript","script","interactive","browser","dynamic","function","dom","event","code","web"],
+      "What is a web browser?": ["browser","chrome","firefox","render","html","url","web","page","internet","display"],
+      "What is the internet?": ["internet","network","global","connect","web","server","protocol","tcp","ip","worldwide"],
+      "What is a linked list?": ["linked","list","node","pointer","next","chain","dynamic","head","traverse","element"],
+      "What is sorting?": ["sort","order","ascending","descending","algorithm","compare","arrange","bubble","quick","merge"],
+      "What is searching in data structures?": ["search","find","linear","binary","index","key","element","traverse","locate","algorithm"],
+      "What is a computer program?": ["program","instruction","code","computer","execute","language","software","task","run","write"],
+      "What does a programmer do?": ["programmer","code","write","develop","debug","software","language","problem","solution","build"],
+      "What is a website?": ["website","web","page","html","css","url","browser","server","online","content"],
+      "What is a network?": ["network","connect","device","computer","share","communicate","lan","wifi","cable","resource"],
+      "What is data?": ["data","fact","information","raw","number","text","store","process","binary","bit"],
+      "What is software?": ["software","program","instruction","computer","application","system","code","run","install","digital"],
+      "What is RAM?": ["ram","memory","random","access","volatile","temporary","fast","store","gb","cpu"],
+      "What is a file?": ["file","store","data","name","extension","folder","save","read","write","document"],
+      "What is testing?": ["test","bug","verify","quality","unit","integration","system","find","error","software"],
+      "What is a bug?": ["bug","error","flaw","code","fix","debug","unexpected","crash","wrong","problem"],
+      "What is email?": ["email","message","send","receive","smtp","inbox","attachment","internet","electronic","mail"],
+      "What is safe browsing?": ["safe","browsing","https","phishing","link","antivirus","password","secure","update","threat"],
+      "What is data privacy?": ["privacy","data","personal","protect","gdpr","consent","share","information","law","right"],
+      "What is a hacker?": ["hacker","black hat","white hat","security","unauthorized","access","exploit","vulnerability","ethical","attack"],
+      "What is a password?": ["password","secret","character","login","strong","protect","account","unique","verify","credential"],
+      "What is virus in computer?": ["virus","malware","infect","spread","file","damage","antivirus","replicate","program","corrupt"]
+    }
+
+    // =============================================
+    // SMART SCORING FUNCTION
+    // =============================================
+    function calculateScore(question, answer) {
+      const ans = answer.toLowerCase()
+      const words = ans.split(/\s+/).filter(w => w).length
+
+      // Empty answer = 0
+      if(!answer.trim() || words === 0) return { score: 0, matched: 0, total: 0 }
+
+      const keywords = keywordBank[question]
+
+      // No keywords defined (custom subject) — use word count fallback
+      if(!keywords) {
+        if(words >= 40) return { score: 9, matched: -1, total: 0 }
+        if(words >= 30) return { score: 8, matched: -1, total: 0 }
+        if(words >= 20) return { score: 7, matched: -1, total: 0 }
+        if(words >= 15) return { score: 6, matched: -1, total: 0 }
+        if(words >= 10) return { score: 5, matched: -1, total: 0 }
+        if(words >= 6)  return { score: 3, matched: -1, total: 0 }
+        return { score: 1, matched: -1, total: 0 }
+      }
+
+      // Count matched keywords
+      let matched = 0
+      keywords.forEach(kw => {
+        if(ans.includes(kw.toLowerCase())) matched++
+      })
+
+      const total = keywords.length
+      const ratio = matched / total
+
+      // Score based on keyword match ratio
+      let score = 0
+      if(ratio >= 0.7)      score = 10
+      else if(ratio >= 0.55) score = 9
+      else if(ratio >= 0.45) score = 8
+      else if(ratio >= 0.35) score = 7
+      else if(ratio >= 0.25) score = 6
+      else if(ratio >= 0.18) score = 5
+      else if(ratio >= 0.12) score = 4
+      else if(ratio >= 0.07) score = 3
+      else if(ratio >= 0.03) score = 2
+      else score = 1
+
+      // Bonus: if long answer AND good keywords, bump up by 1
+      if(words >= 30 && score >= 5 && score < 10) score = Math.min(10, score + 1)
+
+      return { score, matched, total }
+    }
+
+    window.submitAnswer = function(auto = false) {
+      if(state.violationOnCurrentQ) return
+      clearInterval(state.timerInterval)
+      if(state.isRecording) { state.recognition.stop(); state.isRecording = false }
+
+      const answer = document.getElementById('answer-input').value.trim()
+      const question = state.questions[state.currentQ]
+
+      let score = 0
+      let feedbackMsg = ''
+
+      if(!answer) {
+        score = 0
+        feedbackMsg = '❌ No answer provided. You must write something to earn marks!'
+      } else {
+        const result = calculateScore(question, answer)
+        score = result.score
+        const { matched, total } = result
+
+        if(matched === -1) {
+          // Custom subject — word count feedback
+          if(score >= 8) feedbackMsg = '🌟 Excellent! Great depth in your answer!'
+          else if(score >= 6) feedbackMsg = '✅ Good answer! Try to add more detail.'
+          else if(score >= 4) feedbackMsg = '👍 Decent attempt. Expand your answer more.'
+          else feedbackMsg = '📝 Too brief. Write a more detailed explanation.'
+        } else {
+          const pct = Math.round((matched / total) * 100)
+          if(score === 10) feedbackMsg = `🌟 Perfect! You covered ${matched}/${total} key concepts. Outstanding answer!`
+          else if(score >= 8) feedbackMsg = `✅ Excellent! You covered ${matched}/${total} key concepts. Very well done!`
+          else if(score >= 6) feedbackMsg = `👍 Good answer! You covered ${matched}/${total} key concepts. Add more detail for full marks.`
+          else if(score >= 4) feedbackMsg = `📝 Partial answer. You covered ${matched}/${total} key concepts. Study the topic more.`
+          else if(score >= 2) feedbackMsg = `⚠️ Weak answer. Only ${matched}/${total} key concepts matched. Review this topic carefully.`
+          else feedbackMsg = `❌ Incorrect or irrelevant answer. ${matched}/${total} key concepts found. Please study this topic again.`
+        }
+      }
+
+      state.score += score
+      state.answers.push({ question, answer, score })
+      document.getElementById('score-display').textContent = 'Score: ' + state.score
+
+      const pill = document.getElementById('feedback-pill')
+      pill.textContent = score + '/10'
+      if(score >= 8) { pill.style.background = 'rgba(0,255,148,0.15)'; pill.style.color = '#00ff94' }
+      else if(score >= 5) { pill.style.background = 'rgba(255,209,102,0.15)'; pill.style.color = '#ffd166' }
+      else { pill.style.background = 'rgba(255,61,113,0.15)'; pill.style.color = '#ff3d71' }
+
+      document.getElementById('feedback-text').textContent = feedbackMsg
+      document.getElementById('feedback-card').style.display = 'block'
+
+      const btn = document.getElementById('submit-btn')
+      btn.textContent = state.currentQ + 1 < state.questions.length ? 'Next Question →' : 'Finish Viva ✓'
+      btn.onclick = nextQuestion
+    }
+
+    window.nextQuestion = function() {
+      state.currentQ++
+      if(state.currentQ >= state.questions.length) endViva()
+      else renderQuestion()
+    }
+
+    async function endViva() {
+      clearInterval(state.timerInterval)
+      clearInterval(faceCheckInterval)
+      clearInterval(faceDetectionLoop)
+      if(cameraStream) cameraStream.getTracks().forEach(t => t.stop())
+
+      const total = state.questions.length * 10
+      const pct = Math.round((state.score / total) * 100)
+
+      if(currentUser) {
+        try {
+          await addDoc(collection(db, 'results'), {
+            userId: currentUser.uid,
+            subject: state.subject,
+            difficulty: state.diff,
+            score: state.score,
+            totalScore: total,
+            percentage: pct,
+            violations: state.violations,
+            answers: state.answers,
+            date: new Date().toISOString()
+          })
+        } catch(e) { console.log('Save error:', e) }
+      }
+
+      sessionStorage.setItem('vivaResult', JSON.stringify({
+        subject: state.subject,
+        diff: state.diff,
+        examiner: state.examiner,
+        score: state.score,
+        totalScore: total,
+        percentage: pct,
+        violations: state.violations,
+        answers: state.answers,
+        date: new Date().toISOString()
+      }))
+
+      window.location.href = 'result.html'
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast')
+      t.textContent = msg
+      t.style.display = 'block'
+      setTimeout(() => t.style.display = 'none', 3500)
+    }
+
+  </script>
+</body>
+</html>

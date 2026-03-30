@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VivaIQ — History</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #080b14; font-family: 'Segoe UI', sans-serif; min-height: 100vh; color: white; }
+
+    /* NAVBAR */
+    .navbar { display: flex; align-items: center; justify-content: space-between; padding: 16px 32px; background: #0d1220; border-bottom: 1px solid #1e2a42; }
+    .navbar h1 { font-size: 24px; font-weight: 800; background: linear-gradient(135deg, #ffffff, #00e5ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .navbar-right { display: flex; align-items: center; gap: 12px; }
+    .user-badge { background: #141929; border: 1px solid #1e2a42; border-radius: 8px; padding: 8px 16px; font-size: 13px; color: #00e5ff; }
+    .btn-nav { background: transparent; border: 1px solid #1e2a42; border-radius: 8px; padding: 8px 16px; color: #6b7a9e; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+    .btn-nav:hover { border-color: #00e5ff; color: #00e5ff; }
+    .btn-nav.danger:hover { border-color: #ff3d71; color: #ff3d71; }
+
+    /* MAIN */
+    .main { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+
+    /* HEADER */
+    .page-header { margin-bottom: 32px; }
+    .page-header h2 { font-size: 28px; font-weight: 800; margin-bottom: 6px; }
+    .page-header p { color: #6b7a9e; font-size: 14px; }
+
+    /* STATS ROW */
+    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 32px; }
+    .stat-card { background: #0d1220; border: 1px solid #1e2a42; border-radius: 14px; padding: 20px; text-align: center; position: relative; overflow: hidden; }
+    .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+    .stat-card.blue::before { background: #00e5ff; }
+    .stat-card.green::before { background: #00ff94; }
+    .stat-card.yellow::before { background: #ffd166; }
+    .stat-card.purple::before { background: #a259ff; }
+    .stat-val { font-size: 30px; font-weight: 800; display: block; margin-bottom: 4px; }
+    .stat-val.blue { color: #00e5ff; }
+    .stat-val.green { color: #00ff94; }
+    .stat-val.yellow { color: #ffd166; }
+    .stat-val.purple { color: #a259ff; }
+    .stat-key { font-size: 10px; letter-spacing: 1px; color: #6b7a9e; text-transform: uppercase; }
+
+    /* FILTERS */
+    .filters { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
+    .filter-label { font-size: 11px; color: #6b7a9e; letter-spacing: 1px; text-transform: uppercase; margin-right: 4px; }
+    .filter-btn { background: #141929; border: 1px solid #1e2a42; border-radius: 8px; padding: 7px 14px; color: #6b7a9e; font-size: 12px; cursor: pointer; transition: all 0.2s; }
+    .filter-btn:hover, .filter-btn.active { border-color: #00e5ff; color: #00e5ff; background: rgba(0,229,255,0.07); }
+
+    /* RESULT CARDS */
+    .results-list { display: flex; flex-direction: column; gap: 14px; }
+
+    .result-card { background: #0d1220; border: 1px solid #1e2a42; border-radius: 14px; padding: 22px 24px; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; }
+    .result-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; transition: all 0.2s; }
+    .result-card.grade-excellent::before { background: #00ff94; }
+    .result-card.grade-good::before { background: #ffd166; }
+    .result-card.grade-poor::before { background: #ff3d71; }
+    .result-card:hover { border-color: #2a3a5c; transform: translateY(-1px); }
+
+    .card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .card-subject { font-size: 16px; font-weight: 700; color: white; }
+    .card-date { font-size: 11px; color: #6b7a9e; }
+
+    .card-mid { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
+    .tag { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: 0.5px; }
+    .tag.diff-easy { background: rgba(0,255,148,0.1); color: #00ff94; }
+    .tag.diff-medium { background: rgba(255,209,102,0.1); color: #ffd166; }
+    .tag.diff-hard { background: rgba(255,61,113,0.1); color: #ff3d71; }
+    .tag.diff-demo { background: rgba(0,229,255,0.1); color: #00e5ff; }
+    .tag.examiner { background: rgba(162,89,255,0.1); color: #a259ff; }
+    .tag.violation { background: rgba(255,61,113,0.1); color: #ff3d71; }
+
+    .card-bottom { display: flex; align-items: center; justify-content: space-between; }
+    .score-bar-wrap { flex: 1; margin-right: 20px; }
+    .score-bar-label { display: flex; justify-content: space-between; margin-bottom: 5px; }
+    .score-bar-label span { font-size: 11px; color: #6b7a9e; }
+    .score-bar-label strong { font-size: 12px; color: white; }
+    .score-bar { height: 6px; background: #1e2a42; border-radius: 3px; overflow: hidden; }
+    .score-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+
+    .score-circle-sm { width: 56px; height: 56px; border-radius: 50%; border: 2px solid #1e2a42; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #141929; flex-shrink: 0; }
+    .score-pct-sm { font-size: 14px; font-weight: 800; line-height: 1; }
+    .score-lbl-sm { font-size: 8px; color: #6b7a9e; letter-spacing: 1px; text-transform: uppercase; }
+
+    /* EMPTY STATE */
+    .empty-state { text-align: center; padding: 80px 20px; }
+    .empty-icon { font-size: 64px; margin-bottom: 16px; }
+    .empty-state h3 { font-size: 20px; font-weight: 700; margin-bottom: 8px; color: #a0aec0; }
+    .empty-state p { font-size: 14px; color: #6b7a9e; margin-bottom: 24px; }
+    .btn-start { background: linear-gradient(135deg, #00e5ff, #a259ff); border: none; border-radius: 10px; padding: 14px 32px; color: #000; font-size: 14px; font-weight: 800; cursor: pointer; }
+
+    /* LOADING */
+    .loading { text-align: center; padding: 60px; }
+    .spinner { width: 40px; height: 40px; border: 3px solid #1e2a42; border-top-color: #00e5ff; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading p { color: #6b7a9e; font-size: 14px; }
+
+    /* DELETE CONFIRM */
+    .confirm-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100; align-items: center; justify-content: center; }
+    .confirm-overlay.show { display: flex; }
+    .confirm-box { background: #0d1220; border: 1px solid #ff3d71; border-radius: 16px; padding: 32px; max-width: 380px; width: 90%; text-align: center; }
+    .confirm-box h3 { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+    .confirm-box p { font-size: 13px; color: #6b7a9e; margin-bottom: 24px; line-height: 1.6; }
+    .confirm-btns { display: flex; gap: 12px; }
+    .btn-cancel { flex: 1; background: #141929; border: 1px solid #1e2a42; border-radius: 8px; padding: 12px; color: white; font-size: 13px; cursor: pointer; }
+    .btn-delete { flex: 1; background: #ff3d71; border: none; border-radius: 8px; padding: 12px; color: white; font-size: 13px; font-weight: 700; cursor: pointer; }
+
+    /* RESPONSIVE */
+    @media (max-width: 600px) {
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .navbar { padding: 12px 16px; }
+      .main { padding: 24px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="navbar">
+    <h1>VivaIQ</h1>
+    <div class="navbar-right">
+      <div class="user-badge" id="user-badge">👤 Loading...</div>
+      <button class="btn-nav" onclick="window.location.href='viva.html'">🚀 New Viva</button>
+      <button class="btn-nav danger" onclick="logoutUser()">Logout</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="page-header">
+      <h2>📊 Viva History</h2>
+      <p>Your past viva attempts and performance overview</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card blue">
+        <span class="stat-val blue" id="stat-total">—</span>
+        <span class="stat-key">Total Vivaqs</span>
+      </div>
+      <div class="stat-card green">
+        <span class="stat-val green" id="stat-avg">—</span>
+        <span class="stat-key">Avg Score %</span>
+      </div>
+      <div class="stat-card yellow">
+        <span class="stat-val yellow" id="stat-best">—</span>
+        <span class="stat-key">Best Score %</span>
+      </div>
+      <div class="stat-card purple">
+        <span class="stat-val purple" id="stat-subjects">—</span>
+        <span class="stat-key">Subjects Tried</span>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters">
+      <span class="filter-label">Filter:</span>
+      <button class="filter-btn active" onclick="filterResults('all', this)">All</button>
+      <button class="filter-btn" onclick="filterResults('easy', this)">Easy</button>
+      <button class="filter-btn" onclick="filterResults('medium', this)">Medium</button>
+      <button class="filter-btn" onclick="filterResults('hard', this)">Hard</button>
+      <button class="filter-btn" onclick="filterResults('demo', this)">Demo</button>
+    </div>
+
+    <!-- Results List -->
+    <div id="results-container">
+      <div class="loading">
+        <div class="spinner"></div>
+        <p>Loading your history...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirm Modal -->
+  <div class="confirm-overlay" id="confirm-overlay">
+    <div class="confirm-box">
+      <h3>🗑️ Delete Record?</h3>
+      <p>This viva record will be permanently deleted from your history. This action cannot be undone.</p>
+      <div class="confirm-btns">
+        <button class="btn-cancel" onclick="closeConfirm()">Cancel</button>
+        <button class="btn-delete" onclick="confirmDelete()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+    import { getFirestore, collection, query, where, orderBy, getDocs, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAzVeBAh3N9F2aFW422YZ_6mcXwlYcyf3E",
+      authDomain: "vivaiq-24c89.firebaseapp.com",
+      projectId: "vivaiq-24c89",
+      storageBucket: "vivaiq-24c89.firebasestorage.app",
+      messagingSenderId: "356031432226",
+      appId: "1:356031432226:web:d9363105d8a7bcdbc9ac7b"
+    };
+
+    const app = initializeApp(firebaseConfig)
+    const auth = getAuth(app)
+    const db = getFirestore(app)
+
+    let currentUser = null
+    let allResults = []
+    let deleteTargetId = null
+    let currentFilter = 'all'
+
+    onAuthStateChanged(auth, async (user) => {
+      if(user) {
+        currentUser = user
+        // Get name from Firestore
+        try {
+          const { doc: docFn, getDoc } = await import("https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js")
+          const snap = await getDoc(docFn(db, 'users', user.uid))
+          if(snap.exists()) document.getElementById('user-badge').textContent = '👤 ' + snap.data().name
+        } catch(e) {}
+        loadHistory()
+      } else {
+        window.location.href = 'index.html'
+      }
+    })
+
+    window.logoutUser = async function() {
+      await signOut(auth)
+      window.location.href = 'index.html'
+    }
+
+    async function loadHistory() {
+      try {
+        const q = query(
+          collection(db, 'results'),
+          where('userId', '==', currentUser.uid),
+          orderBy('date', 'desc')
+        )
+        const snapshot = await getDocs(q)
+        allResults = []
+        snapshot.forEach(d => allResults.push({ id: d.id, ...d.data() }))
+        renderStats()
+        renderResults(allResults)
+      } catch(e) {
+        // If index not ready, try without orderBy
+        try {
+          const q2 = query(collection(db, 'results'), where('userId', '==', currentUser.uid))
+          const snap2 = await getDocs(q2)
+          allResults = []
+          snap2.forEach(d => allResults.push({ id: d.id, ...d.data() }))
+          allResults.sort((a, b) => new Date(b.date) - new Date(a.date))
+          renderStats()
+          renderResults(allResults)
+        } catch(e2) {
+          document.getElementById('results-container').innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon">⚠️</div>
+              <h3>Could not load history</h3>
+              <p>Please check your internet connection and try again.</p>
+            </div>`
+        }
+      }
+    }
+
+    function renderStats() {
+      const total = allResults.length
+      document.getElementById('stat-total').textContent = total
+
+      if(total === 0) {
+        document.getElementById('stat-avg').textContent = '—'
+        document.getElementById('stat-best').textContent = '—'
+        document.getElementById('stat-subjects').textContent = '0'
+        return
+      }
+
+      const avg = Math.round(allResults.reduce((s, r) => s + r.percentage, 0) / total)
+      const best = Math.max(...allResults.map(r => r.percentage))
+      const subjects = new Set(allResults.map(r => r.subject)).size
+
+      document.getElementById('stat-avg').textContent = avg + '%'
+      document.getElementById('stat-best').textContent = best + '%'
+      document.getElementById('stat-subjects').textContent = subjects
+    }
+
+    function renderResults(list) {
+      const container = document.getElementById('results-container')
+
+      if(list.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📭</div>
+            <h3>No viva records found</h3>
+            <p>${currentFilter === 'all' ? 'You have not completed any viva yet. Start your first viva now!' : 'No records for this difficulty level.'}</p>
+            ${currentFilter === 'all' ? '<button class="btn-start" onclick="window.location.href=\'viva.html\'">🚀 Start First Viva</button>' : ''}
+          </div>`
+        return
+      }
+
+      const exNames = { strict: 'Strict', friendly: 'Friendly', industry: 'Industry' }
+
+      container.innerHTML = `<div class="results-list">` + list.map(r => {
+        const grade = r.percentage >= 70 ? 'excellent' : r.percentage >= 50 ? 'good' : 'poor'
+        const pctColor = r.percentage >= 70 ? '#00ff94' : r.percentage >= 50 ? '#ffd166' : '#ff3d71'
+        const barColor = pctColor
+        const date = new Date(r.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+        const time = new Date(r.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+        const violations = r.violations ? r.violations.length : 0
+        const examiner = exNames[r.examiner || 'strict']
+
+        return `
+          <div class="result-card grade-${grade}" onclick="viewResult('${r.id}')">
+            <div class="card-top">
+              <div class="card-subject">📚 ${r.subject}</div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div class="card-date">🗓 ${date} · ${time}</div>
+                <button onclick="event.stopPropagation();openConfirm('${r.id}')" style="background:transparent;border:none;color:#6b7a9e;cursor:pointer;font-size:14px;padding:2px 6px;border-radius:4px;" title="Delete">🗑️</button>
+              </div>
+            </div>
+            <div class="card-mid">
+              <span class="tag diff-${r.difficulty || r.diff}">${(r.difficulty || r.diff || 'medium').toUpperCase()}</span>
+              <span class="tag examiner">👔 ${examiner}</span>
+              ${violations > 0 ? `<span class="tag violation">⚠️ ${violations} Violation${violations > 1 ? 's' : ''}</span>` : ''}
+            </div>
+            <div class="card-bottom">
+              <div class="score-bar-wrap">
+                <div class="score-bar-label">
+                  <span>Score</span>
+                  <strong>${r.score} / ${r.totalScore} points</strong>
+                </div>
+                <div class="score-bar">
+                  <div class="score-bar-fill" style="width:${r.percentage}%;background:${barColor}"></div>
+                </div>
+              </div>
+              <div class="score-circle-sm">
+                <span class="score-pct-sm" style="color:${pctColor}">${r.percentage}%</span>
+                <span class="score-lbl-sm">Score</span>
+              </div>
+            </div>
+          </div>`
+      }).join('') + `</div>`
+    }
+
+    window.filterResults = function(diff, btn) {
+      currentFilter = diff
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'))
+      btn.classList.add('active')
+      const filtered = diff === 'all' ? allResults : allResults.filter(r => (r.difficulty || r.diff) === diff)
+      renderResults(filtered)
+    }
+
+    window.viewResult = function(id) {
+      const r = allResults.find(x => x.id === id)
+      if(!r) return
+      sessionStorage.setItem('vivaResult', JSON.stringify({
+        subject: r.subject,
+        diff: r.difficulty || r.diff,
+        examiner: r.examiner || 'strict',
+        score: r.score,
+        totalScore: r.totalScore,
+        percentage: r.percentage,
+        violations: r.violations || [],
+        answers: r.answers || [],
+        date: r.date
+      }))
+      window.location.href = 'result.html'
+    }
+
+    window.openConfirm = function(id) {
+      deleteTargetId = id
+      document.getElementById('confirm-overlay').classList.add('show')
+    }
+
+    window.closeConfirm = function() {
+      deleteTargetId = null
+      document.getElementById('confirm-overlay').classList.remove('show')
+    }
+
+    window.confirmDelete = async function() {
+      if(!deleteTargetId) return
+      try {
+        await deleteDoc(doc(db, 'results', deleteTargetId))
+        allResults = allResults.filter(r => r.id !== deleteTargetId)
+        renderStats()
+        const filtered = currentFilter === 'all' ? allResults : allResults.filter(r => (r.difficulty || r.diff) === currentFilter)
+        renderResults(filtered)
+      } catch(e) {
+        alert('Delete failed. Please try again.')
+      }
+      closeConfirm()
+    }
+
+  </script>
+</body>
+</html>

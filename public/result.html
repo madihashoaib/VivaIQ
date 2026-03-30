@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VivaIQ — Result</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:#080b14;font-family:'Segoe UI',sans-serif;min-height:100vh;color:white}
+    .navbar{display:flex;align-items:center;justify-content:space-between;padding:16px 32px;background:#0d1220;border-bottom:1px solid #1e2a42;position:sticky;top:0;z-index:100}
+    .navbar h1{font-size:22px;font-weight:800;background:linear-gradient(135deg,#fff,#00e5ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .navbar-right{display:flex;align-items:center;gap:12px}
+    .user-badge{background:#141929;border:1px solid #1e2a42;border-radius:8px;padding:7px 14px;font-size:13px;color:#00e5ff}
+    .logout-btn{background:transparent;border:1px solid #1e2a42;border-radius:8px;padding:7px 14px;color:#6b7a9e;font-size:13px;cursor:pointer;transition:.2s}
+    .logout-btn:hover{border-color:#ff3d71;color:#ff3d71}
+    .main{max-width:820px;margin:0 auto;padding:36px 20px 60px}
+
+    /* Score Header */
+    .score-header{background:#0d1220;border:1px solid #1e2a42;border-radius:20px;padding:36px;text-align:center;margin-bottom:24px;position:relative;overflow:hidden}
+    .score-header::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#00e5ff,#a259ff,#ff3d71)}
+    .score-header h2{font-size:26px;font-weight:800;margin-bottom:6px}
+    .score-meta{font-size:11px;color:#6b7a9e;letter-spacing:1px;text-transform:uppercase;margin-bottom:28px}
+    .score-circle{width:130px;height:130px;border-radius:50%;border:3px solid #1e2a42;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 28px;background:#141929;position:relative}
+    .score-circle::after{content:'';position:absolute;inset:-6px;border-radius:50%;background:conic-gradient(var(--clr) var(--pct),transparent 0);opacity:.2;pointer-events:none}
+    .score-pct{font-size:40px;font-weight:800;line-height:1}
+    .score-lbl{font-size:10px;letter-spacing:2px;color:#6b7a9e;text-transform:uppercase;margin-top:4px}
+    .grade-badge{display:inline-block;padding:6px 18px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:1px;margin-bottom:24px;text-transform:uppercase}
+    .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+    .stat-box{background:#141929;border:1px solid #1e2a42;border-radius:12px;padding:14px;text-align:center}
+    .stat-val{font-size:24px;font-weight:800;display:block;margin-bottom:3px}
+    .stat-key{font-size:10px;letter-spacing:1px;color:#6b7a9e;text-transform:uppercase}
+
+    /* Violations */
+    .violations-card{background:rgba(255,61,113,0.05);border:1px solid rgba(255,61,113,0.25);border-radius:14px;padding:18px;margin-bottom:24px}
+    .violations-card h3{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#ff3d71;margin-bottom:10px}
+    .violation-item{font-size:12px;color:#6b7a9e;padding:5px 0;border-bottom:1px solid rgba(255,61,113,0.1)}
+    .violation-item:last-child{border-bottom:none}
+
+    /* Section */
+    .section-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#6b7a9e;margin-bottom:14px;margin-top:8px}
+
+    /* Q Cards */
+    .q-card{background:#0d1220;border:1px solid #1e2a42;border-radius:14px;padding:22px;margin-bottom:14px;position:relative;overflow:hidden;transition:.2s}
+    .q-card:hover{border-color:#2a3a5c}
+    .q-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+    .q-card.excellent::before{background:#00ff94}
+    .q-card.good::before{background:#ffd166}
+    .q-card.poor::before{background:#ff3d71}
+    .q-card.skipped::before{background:#6b7a9e}
+    .q-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .q-num{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#6b7a9e}
+    .q-score-badge{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700}
+    .q-score-badge.excellent{background:rgba(0,255,148,0.12);color:#00ff94}
+    .q-score-badge.good{background:rgba(255,209,102,0.12);color:#ffd166}
+    .q-score-badge.poor{background:rgba(255,61,113,0.12);color:#ff3d71}
+    .q-score-badge.skipped{background:rgba(107,122,158,0.12);color:#6b7a9e}
+    .q-question{font-size:15px;font-weight:700;color:white;margin-bottom:12px;line-height:1.5}
+    .q-lbl{font-size:10px;letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;display:flex;align-items:center;gap:6px}
+    .q-lbl.user{color:#a259ff}
+    .q-lbl.ai{color:#00e5ff}
+    .q-box{background:#141929;border-radius:8px;padding:11px 14px;font-size:13px;line-height:1.7;margin-bottom:10px;color:#e8edf8}
+    .q-box.ai{border:1px solid rgba(0,229,255,0.12);color:#b0d8e8}
+    .q-box.skip{color:#6b7a9e;font-style:italic}
+    .q-box.loading{color:#6b7a9e;font-style:italic;display:flex;align-items:center;gap:8px}
+    .dots{display:inline-flex;gap:4px}
+    .dots span{width:6px;height:6px;border-radius:50%;background:#00e5ff;animation:dot .8s infinite}
+    .dots span:nth-child(2){animation-delay:.2s}
+    .dots span:nth-child(3){animation-delay:.4s}
+    @keyframes dot{0%,60%,100%{opacity:.2;transform:scale(.8)}30%{opacity:1;transform:scale(1)}}
+
+    /* Actions */
+    .action-row{display:flex;gap:10px;margin-top:28px;margin-bottom:40px}
+    .btn-dl{flex:1;background:#141929;border:1px solid #1e2a42;border-radius:10px;padding:14px;color:white;font-size:13px;font-weight:700;cursor:pointer;transition:.2s}
+    .btn-dl:hover{border-color:#00e5ff;color:#00e5ff}
+    .btn-hist{flex:1;background:transparent;border:1px solid #a259ff;border-radius:10px;padding:14px;color:#a259ff;font-size:13px;font-weight:700;cursor:pointer;transition:.2s}
+    .btn-hist:hover{background:rgba(162,89,255,.1)}
+    .btn-new{flex:1;background:linear-gradient(135deg,#00e5ff,#a259ff);border:none;border-radius:10px;padding:14px;color:#000;font-size:13px;font-weight:800;cursor:pointer}
+
+    /* Error */
+    .err{text-align:center;padding:60px 20px}
+    .err h3{font-size:20px;color:#6b7a9e;margin-bottom:12px}
+    .err p{font-size:14px;color:#6b7a9e;margin-bottom:16px}
+    .err button{background:linear-gradient(135deg,#00e5ff,#a259ff);border:none;border-radius:10px;padding:14px 32px;color:#000;font-size:14px;font-weight:800;cursor:pointer;margin-top:16px}
+
+    @media(max-width:600px){
+      .stats-row{grid-template-columns:1fr 1fr}
+      .action-row{flex-direction:column}
+      .navbar{padding:12px 16px}
+      .main{padding:20px 12px 40px}
+    }
+  </style>
+</head>
+<body>
+
+<div class="navbar">
+  <h1>VivaIQ</h1>
+  <div class="navbar-right">
+    <div class="user-badge" id="user-badge">Student</div>
+    <button class="logout-btn" onclick="logoutUser()">Logout</button>
+  </div>
+</div>
+
+<div class="main" id="main">
+  <div style="text-align:center;padding:60px;color:#6b7a9e">Loading...</div>
+</div>
+
+<script>
+// ─── MODEL ANSWERS (all subjects) ───────────────────────────────────────────
+const MA = {
+"What is the difference between a compiler and an interpreter?":"A compiler translates the entire source code into machine code before execution. An interpreter translates and executes code line by line at runtime. Compilers give faster execution; interpreters are easier to debug. Example: GCC is a compiler, Python uses an interpreter.",
+"What is OOP? Name its four pillars.":"OOP organises code around objects. Four pillars: 1) Encapsulation - hiding internal data. 2) Inheritance - child class gets parent properties. 3) Polymorphism - same method behaves differently in different classes. 4) Abstraction - hide complex details, show only essentials.",
+"What is a variable and how does it differ from a constant?":"A variable is a named memory location whose value can change. A constant has a fixed value that cannot change once assigned. In JavaScript: let/var for variables, const for constants. Example: let age = 20 can change; const PI = 3.14 cannot.",
+"What is a function and why do we use it?":"A function is a reusable block of code that performs a specific task. We use functions to avoid repetition (DRY principle), improve readability, and break problems into smaller parts. Functions take parameters and can return output.",
+"What is the difference between == and === in programming?":"== is loose equality - compares values after type conversion, so 5 == '5' is true. === is strict equality - compares both value AND type, so 5 === '5' is false. Always use === to avoid unexpected bugs.",
+"What is a loop? Name three types of loops.":"A loop repeats a block of code until a condition is met. Three types: 1) For loop (known number of iterations). 2) While loop (repeats while condition is true). 3) Do-While loop (executes at least once then checks condition).",
+"What is an array? How is it different from a single variable?":"An array stores multiple values under one variable name, accessed by index starting at 0. A single variable stores only one value. Example: let names = ['Ali','Sara','Umar']. Arrays store collections of related data.",
+"What is a class and what is an object?":"A class is a blueprint defining properties and behaviors. An object is an actual instance of that class in memory. Example: Car is a class; a specific red Toyota is an object - one instance of the Car class.",
+"What is debugging and why is it important?":"Debugging is finding and fixing errors in code. Important because bugs cause incorrect results or crashes. Tools: breakpoints, print statements, IDE debuggers. Good debugging skills save development time and ensure software reliability.",
+"What is an IDE? Give two examples.":"An IDE provides a complete coding environment with editor, compiler, and debugger. Examples: 1) Visual Studio Code - lightweight, widely used. 2) IntelliJ IDEA - popular for Java development.",
+"Explain pass by value vs pass by reference with an example.":"Pass by value sends a copy - changes inside the function do not affect the original. Pass by reference sends the memory address - changes affect the original. In JavaScript: primitives use pass by value; objects and arrays use pass by reference.",
+"What is recursion? Explain with an example and mention base case.":"Recursion is when a function calls itself to solve a smaller version of the same problem. Must have a base case to stop. Example: factorial(n) = n * factorial(n-1), base case: factorial(0) = 1. Without base case: stack overflow.",
+"What is an API and how does REST differ from GraphQL?":"An API allows different systems to communicate. REST uses multiple fixed endpoints returning predefined data. GraphQL uses a single endpoint where clients request exactly the data they need - no over-fetching. REST is simpler; GraphQL is more flexible.",
+"What is the difference between synchronous and asynchronous programming?":"Synchronous code executes one task at a time, blocking until each finishes. Asynchronous code does not block - other code runs while waiting. JavaScript uses callbacks, Promises, and async/await for async operations like API calls.",
+"What is exception handling? Explain try-catch-finally.":"Exception handling manages runtime errors gracefully. Try: risky code runs here. Catch: handles errors if they occur. Finally: always executes regardless of error. Prevents program crashes and enables meaningful error messages.",
+"What is the difference between stack memory and heap memory?":"Stack: stores local variables, automatically managed, fast, LIFO, limited size. Heap: stores objects and arrays, managed by garbage collector, flexible size. Stack overflow occurs when recursion is too deep.",
+"Explain the concept of polymorphism with a real world example.":"Polymorphism means same method behaves differently for different classes. Example: Shape class has draw(). Circle, Square, Triangle all override draw() differently. This is runtime polymorphism through method overriding.",
+"What is a design pattern? Explain the Singleton pattern.":"A design pattern is a proven reusable solution to a common design problem. Singleton ensures only one instance of a class exists. Constructor is private; a static method returns the single instance. Used for database connections and logging.",
+"What is version control and why is Git important?":"Version control tracks file changes over time. Git is the most popular distributed VCS. Allows team collaboration, maintains complete history, supports branching, allows rollback. Commands: git commit, git push, git pull, git branch.",
+"What is multithreading and what problems can it cause?":"Multithreading runs multiple threads simultaneously for better performance. Problems: race conditions (threads accessing shared data simultaneously), deadlocks (threads waiting for each other), thread starvation. Locks and semaphores prevent these.",
+"Explain closures in JavaScript and how they relate to lexical scope.":"A closure is a function that remembers variables from its outer scope even after the outer function has finished. Lexical scope means a function accesses variables where it was defined. Closures enable data privacy and stateful functions.",
+"What is a race condition? How would you prevent it using mutex?":"A race condition occurs when threads access shared data simultaneously and the outcome depends on execution order. Prevent with mutex: only one thread can hold the lock at a time, others wait.",
+"Describe the SOLID principles and give an example of each.":"S - Single Responsibility: class has one reason to change. O - Open/Closed: open for extension, closed for modification. L - Liskov Substitution: subclasses replace parent class. I - Interface Segregation: prefer small focused interfaces. D - Dependency Inversion: depend on abstractions.",
+"Explain memory management and what causes a memory leak.":"Memory management controls allocation and deallocation. Memory leak: allocated memory is never freed. Causes: forgotten object references, circular references, event listeners not removed. Prevention: careful reference management and garbage collection.",
+"What is dependency injection and why is it used?":"Dependency injection is where a class receives its dependencies from outside instead of creating them. Benefits: easier testing (inject mocks), loose coupling, better maintainability. Used in Spring, Angular, and other frameworks.",
+"Explain the difference between monolithic and microservices architecture.":"Monolithic: entire application is one deployable unit - simple but hard to scale. Microservices: split into small independent services communicating via APIs - each deployed independently, scales individually. More complex but more scalable.",
+"What is a deadlock? How can it be prevented?":"Deadlock: processes permanently blocked, each waiting for resources held by others. Prevention: resource ordering (always acquire in same order), avoid hold-and-wait, use timeouts, Banker's algorithm for avoidance.",
+"Explain the CAP theorem in distributed systems.":"CAP: a distributed system can only guarantee 2 of 3: Consistency (every read gets latest write), Availability (every request gets a response), Partition Tolerance (works despite network failures). Systems choose between CP or AP.",
+"What is garbage collection? Compare JVM and Python GC strategies.":"GC automatically frees memory of unreachable objects. JVM: generational GC with mark-and-sweep. Python: reference counting as primary + cyclic GC for circular references. Both prevent memory leaks automatically.",
+"Explain event-driven architecture and when you would use it.":"Event-driven: components communicate by producing and consuming events. Publishers emit events; subscribers react. Decouples components. Use for: real-time apps, microservices communication, IoT, UI interactions. Examples: Node.js, Kafka.",
+"What is a computer program?":"A computer program is a set of instructions in a programming language telling the computer what to do step by step. Written in Python, Java, C++ etc. When executed, the CPU follows these instructions to perform tasks.",
+"What is HTML?":"HTML (HyperText Markup Language) is the standard language for creating web pages using tags like h1, p, div, a, img. HTML5 added semantic elements like header, footer, nav. Every website is built using HTML as its structural foundation.",
+"What is CSS?":"CSS (Cascading Style Sheets) controls the visual presentation of HTML - colors, fonts, spacing, layout, animations. Works by selecting elements and applying property-value pairs. Example: .title { color: blue; font-size: 24px }.",
+"What is JavaScript?":"JavaScript is a programming language that runs in the browser making websites interactive. Updates HTML dynamically, responds to user events, validates forms, fetches data via Fetch API. Node.js enables server-side JavaScript.",
+"What does a programmer do?":"A programmer writes, tests, debugs, and maintains software. Analyzes problems, designs solutions, finds and fixes bugs, collaborates with teams. Works in web development, mobile apps, AI, game development and many other fields.",
+"What is the difference between an array and a linked list?":"Array: contiguous memory, fixed size, O(1) random access, O(n) insertion/deletion. Linked list: nodes with pointers, dynamic size, O(n) access, O(1) insertion/deletion at known position. Use arrays for random access; linked lists for frequent insertions.",
+"What is a stack and where is it used?":"Stack follows Last In First Out (LIFO). Operations: push (add), pop (remove from top). Uses: function call stack, undo/redo in editors, expression evaluation, browser back button, balancing parentheses in compilers.",
+"What is Big O notation and why is it important?":"Big O describes algorithm efficiency as input size grows. Common: O(1) constant, O(log n) logarithmic, O(n) linear, O(n log n), O(n^2) quadratic. Important for comparing algorithms and writing scalable code.",
+"What is a queue? Give a real world example.":"Queue follows First In First Out (FIFO). Operations: enqueue (add to rear), dequeue (remove from front). Real world example: printer queue, ticket counter, CPU process scheduling - first come first served.",
+"What is a binary tree?":"A binary tree is a hierarchical structure where each node has at most two children: left and right. BST: left child smaller, right child larger. Enables O(log n) search. Used for searching, sorting, expression evaluation.",
+"What is the difference between linear and non-linear data structures?":"Linear: elements stored sequentially - arrays, linked lists, stacks, queues. Non-linear: hierarchical or complex connections - trees, graphs. Linear is simpler; non-linear represents complex relationships like social networks or file systems.",
+"What is a node in a data structure?":"A node is the basic unit containing data and pointers to other nodes. Linked list node: data + next pointer. Tree node: data + left + right child pointers. In a graph, nodes (vertices) connect via edges.",
+"What is the difference between a singly and doubly linked list?":"Singly linked: each node has data and one next pointer - forward traversal only, less memory. Doubly linked: each node has data, next, and previous pointer - bidirectional traversal, more memory but easier deletion.",
+"What is a circular queue?":"Circular queue connects rear back to front forming a circle. Solves wasted space problem of regular queues. Uses modulo arithmetic: (rear+1) % size. Used in CPU scheduling (round robin) and buffering.",
+"What is a priority queue?":"Priority queue serves elements based on priority not insertion order. Highest priority element dequeued first. Implemented using heaps. Uses: Dijkstra algorithm, CPU scheduling, hospital triage (most critical patient first).",
+"Explain BFS vs DFS and when to use each.":"BFS: explores level by level using queue - finds shortest path in unweighted graphs. DFS: goes deep first using stack/recursion - good for cycle detection, topological sorting. Use BFS for shortest path; DFS for exhaustive exploration.",
+"What is a hash table? Explain collision resolution strategies.":"Hash table maps keys to values using hash function for O(1) average lookup. Collision: two keys map to same index. Resolution: Chaining (linked list at each index), Open Addressing (linear probing - check next empty slot).",
+"Explain quicksort and its average vs worst case time complexity.":"Quicksort selects pivot, partitions array (smaller left, larger right), recursively sorts. Average: O(n log n). Worst: O(n^2) when pivot is always min or max. Usually fastest in practice.",
+"What is dynamic programming and how is it different from divide and conquer?":"DP stores results of overlapping subproblems to avoid recomputation. Divide and conquer splits into independent subproblems. DP for overlapping problems (Fibonacci, knapsack). Divide and conquer for independent (merge sort).",
+"Explain the difference between min-heap and max-heap.":"Min-heap: parent always smaller than children - root is minimum. Max-heap: parent always larger - root is maximum. Both are complete binary trees. Used in priority queues, heap sort, finding kth largest/smallest element.",
+"What is a balanced binary search tree? Why is balance important?":"Balanced BST maintains height close to log n through rotations. Examples: AVL tree, Red-Black tree. Without balance, BST degrades to O(n) search. Balanced guarantees O(log n) search, insert, and delete operations.",
+"What is the difference between merge sort and insertion sort?":"Merge sort: O(n log n), divide and conquer, stable, needs O(n) extra space - good for large data. Insertion sort: O(n^2) worst case but O(n) for nearly sorted, in-place - good for small or nearly sorted arrays.",
+"Explain how a graph is represented using adjacency matrix vs adjacency list.":"Adjacency matrix: 2D array, O(1) edge lookup, O(V^2) space - good for dense graphs. Adjacency list: array of lists, O(V+E) space - good for sparse graphs. Most real-world graphs are sparse so adjacency list is preferred.",
+"What is memoization and how does it improve recursive algorithms?":"Memoization stores results of function calls and returns cached results for same inputs. Converts exponential to polynomial: Fibonacci without memoization is O(2^n); with memoization it becomes O(n).",
+"What is a trie and what problems does it solve?":"Trie (prefix tree): tree where each node represents a character. Solves: autocomplete, spell checking, longest common prefix, IP routing. O(L) operations where L is word length. Faster than hash tables for prefix searches.",
+"Explain Dijkstra's algorithm step by step. What happens with negative weights?":"Dijkstra finds shortest paths from source. Steps: 1) Initialize all distances as infinity, source as 0. 2) Pick unvisited vertex with minimum distance. 3) Update neighbors if shorter path found. 4) Mark visited. Fails with negative weights - use Bellman-Ford instead.",
+"What is the difference between NP, NP-hard and NP-complete problems?":"P: solvable in polynomial time. NP: solutions verifiable in polynomial time. NP-hard: at least as hard as hardest NP problems. NP-complete: both NP and NP-hard. Examples: SAT, Travelling Salesman are NP-complete.",
+"Explain amortized analysis using a dynamic array as an example.":"Amortized analysis averages cost over a sequence of operations. Dynamic array doubles when full - most insertions are O(1), occasional doubling is O(n). Amortized cost per insertion = O(1) because doubling cost is spread across all insertions.",
+"What is a segment tree and when would you use it?":"Segment tree stores aggregate info (sum, min, max) for array ranges. Range queries and point updates in O(log n). Used for repeated range sum/min/max queries - better than O(n) brute force.",
+"Explain the Floyd-Warshall algorithm and its time complexity.":"Floyd-Warshall finds shortest paths between ALL pairs of vertices using dynamic programming. Considers each vertex as intermediate node. Time complexity: O(V^3). Works with negative weights but not negative cycles.",
+"What is a red-black tree and how does it maintain balance?":"Red-black tree: self-balancing BST. Rules: every node is red or black, root is black, no consecutive red nodes, equal black height on all paths. Balance through recoloring and rotations. Guarantees O(log n). Used in C++ STL map/set.",
+"Explain the Bellman-Ford algorithm and compare it with Dijkstra.":"Bellman-Ford finds shortest paths by relaxing all edges V-1 times. Time: O(VE). Works with negative weights and detects negative cycles. Dijkstra: O((V+E)log V), faster but requires non-negative weights.",
+"What is a B-tree and why is it used in databases?":"B-tree is a self-balancing search tree where each node can have multiple keys. All leaves at same level. Optimized for disk storage - large node size matches disk block, minimizing I/O. Used in database indexes (MySQL InnoDB).",
+"Explain the concept of hashing with open addressing vs separate chaining.":"Separate chaining: linked list at each index stores all colliding elements. Open addressing: search for next empty slot (linear probing), cache friendly but clustering. Both achieve O(1) average operations.",
+"What is a suffix array and what is it used for?":"Suffix array is a sorted array of all suffixes of a string. Used for: fast string searching, finding longest repeated substring, pattern matching, bioinformatics. More space efficient than suffix trees.",
+"What is a data structure?":"A data structure organizes and stores data in memory for efficient access and modification. Examples: arrays (fast index access), linked lists (fast insertion), stacks (LIFO), queues (FIFO), trees (hierarchical), hash tables (fast lookup).",
+"What is a linked list?":"A linked list stores elements (nodes) in sequence with each node containing data and a pointer to the next node. Unlike arrays, nodes are not in contiguous memory. Dynamic size. Types: singly, doubly, circular.",
+"What is sorting?":"Sorting arranges data in order (ascending/descending). Common algorithms: Bubble Sort O(n^2), Merge Sort O(n log n) stable, Quick Sort O(n log n) average. Sorting enables efficient searching.",
+"What is searching in data structures?":"Searching finds a specific element. Linear search: check each element one by one - O(n). Binary search: divide sorted array in half - O(log n), requires sorted data. Hashing: O(1) average.",
+"What is the difference between supervised and unsupervised learning?":"Supervised learning trains on labeled data (input-output pairs). Examples: classification (spam detection), regression (house price). Unsupervised finds patterns in unlabeled data. Examples: clustering (customer segmentation), PCA.",
+"What is overfitting and how can you detect it?":"Overfitting: model memorizes training data including noise - performs well on training but poorly on new data. Detect: compare training vs validation accuracy - large gap means overfitting. Solutions: regularization, dropout, early stopping, more data.",
+"What is gradient descent in simple terms?":"Gradient descent minimizes the loss function by iteratively adjusting model parameters in the direction opposite to the gradient. Learning rate controls step size. Variants: batch, SGD, mini-batch.",
+"What is a training dataset?":"Training dataset is data used to train the model. Typically 70-80% of total data. Rest split into validation (tune hyperparameters) and test set (final evaluation). Model never sees test set during training.",
+"What is the difference between AI, ML, and deep learning?":"AI: broad field enabling machines to mimic human intelligence. ML: subset of AI - systems learn from data without explicit programming. Deep Learning: subset of ML using multi-layer neural networks. Each is a subset of the previous.",
+"What is a classification problem? Give an example.":"Classification predicts which category an input belongs to. Binary (spam/not spam) or multi-class (digit 0-9). Algorithms: logistic regression, decision trees, SVM, neural networks. Output is a category label.",
+"What is a regression problem? Give an example.":"Regression predicts a continuous numerical value. Examples: house price prediction, stock forecasting, temperature prediction, salary estimation. Algorithms: linear regression, random forest.",
+"What is a label in machine learning?":"A label is the correct output/target value for each training example in supervised learning. Also called ground truth. Example: in spam detection, label is 'spam' or 'not spam'. Model learns to predict correct labels.",
+"What is a feature in machine learning?":"A feature is an individual measurable property used as input to an ML model. Example: for house price - features are size, bedrooms, location, age. Feature engineering greatly impacts model accuracy.",
+"What is a confusion matrix?":"Confusion matrix evaluates classification performance. For binary: True Positive (TP), True Negative (TN), False Positive (FP), False Negative (FN). Metrics: Accuracy = (TP+TN)/total. Precision = TP/(TP+FP). Recall = TP/(TP+FN). F1 = harmonic mean.",
+"Explain the bias-variance tradeoff and how it affects model selection.":"Bias: error from wrong assumptions - underfitting. Variance: sensitivity to data fluctuations - overfitting. Ideal model balances both. Regularization and cross-validation help find the balance.",
+"What is backpropagation and how does it work in a neural network?":"Backpropagation computes gradients of the loss for each weight using chain rule. Steps: 1) Forward pass. 2) Compute loss. 3) Backward pass - calculate gradient layer by layer. 4) Update weights via gradient descent.",
+"What is regularization? Compare L1 and L2 regularization.":"Regularization adds penalty to loss function to prevent overfitting. L1 (Lasso): adds sum of absolute weights - can shrink weights to zero, performs feature selection. L2 (Ridge): adds sum of squared weights - shrinks toward zero.",
+"Explain the difference between bagging and boosting with examples.":"Bagging: trains multiple models on random data subsets independently, averages predictions - reduces variance. Example: Random Forest. Boosting: trains models sequentially where each corrects previous errors. Examples: AdaBoost, XGBoost.",
+"What is cross-validation and why is it used?":"K-Fold cross-validation splits data into K parts. Model trained K times - each time one fold is test set. Final score = average of K scores. Prevents overfitting to specific split, gives reliable estimate of real-world performance.",
+"Explain the difference between precision and recall.":"Precision: out of predicted positives, how many are actually positive. TP/(TP+FP). Recall: out of actual positives, how many did model catch. TP/(TP+FN). F1 = harmonic mean of both.",
+"What is a decision tree and how does it make predictions?":"Decision tree: internal nodes test features, branches are outcomes, leaves are class labels. Splits data to maximize information gain or minimize Gini impurity. Easy to interpret. Problem: overfitting. Solution: pruning or Random Forest.",
+"What is the difference between batch gradient descent and stochastic gradient descent?":"Batch GD: uses entire dataset per step - accurate but slow for large data. SGD: one random sample per step - faster but noisy. Mini-batch GD: small batches (32-128 samples) - best of both.",
+"What is transfer learning and when is it useful?":"Transfer learning reuses a pre-trained model as starting point for a new task. Fine-tune existing model on smaller dataset. Useful when: limited labeled data, task similar to pre-training, training from scratch too expensive.",
+"What is the purpose of an activation function in neural networks?":"Activation functions introduce non-linearity. ReLU (max(0,x)): most popular, solves vanishing gradient. Sigmoid: 0-1 output for binary classification. Softmax: multi-class probabilities summing to 1.",
+"Explain the vanishing gradient problem and how modern architectures solve it.":"Vanishing gradient: gradients become tiny during backpropagation - early layers stop learning. Caused by sigmoid/tanh. Solutions: ReLU activation, Batch Normalization, Residual connections in ResNet (skip connections allow gradients to flow directly).",
+"What is a GAN? Explain training dynamics and common failure modes.":"GAN: Generator creates fake data to fool Discriminator. Both improve through competition (minimax game). Failure modes: mode collapse (generator produces limited variety), training instability. Used for image generation and data augmentation.",
+"Explain the attention mechanism in transformers and why it replaced RNNs.":"Attention allows model to focus on relevant input parts for each output token. Self-attention: each token attends to all others. Replaced RNNs: processes all tokens in parallel (much faster), handles long-range dependencies better.",
+"What is reinforcement learning? Explain the exploration-exploitation dilemma.":"RL: agent learns by interacting with environment, receiving rewards for good actions. Exploration-exploitation: exploit known good actions vs explore new ones. Solved with epsilon-greedy or UCB strategy. Used in AlphaGo, robotics.",
+"Explain LSTM networks and how they solve the vanishing gradient problem.":"LSTM has three gates: Forget (what to remove), Input (what new info to store), Output (what to output). Cell state is a long-term memory highway allowing gradients to flow unchanged through time steps.",
+"What is the difference between generative and discriminative models?":"Discriminative: learns decision boundary, models P(y|x) directly. Examples: logistic regression, SVM - better classification. Generative: learns data distribution P(x,y). Examples: Naive Bayes, GANs - can generate new synthetic data.",
+"Explain the Word2Vec model and how word embeddings are learned.":"Word2Vec learns dense vector representations where similar words have similar vectors. Two architectures: CBOW (predict word from context) and Skip-gram (predict context from word). Captures semantic relations: king - man + woman = queen.",
+"What is model distillation and why is it used?":"Model distillation trains a smaller student model to mimic a larger teacher model. Student learns from teacher's soft probability outputs. Result: compact model with nearly same accuracy. Used to deploy models on mobile and edge devices.",
+"Explain the architecture of a Convolutional Neural Network (CNN).":"CNN: Convolutional layers (filters detect edges, textures, patterns), Pooling layers (reduce dimensions), Multiple conv+pool layers extract hierarchical features, Flatten, Fully Connected layers, Output (Softmax). Used for image recognition.",
+"What is federated learning and what privacy benefits does it offer?":"Federated learning trains models across devices without centralizing raw data. Each device trains locally and sends only model updates (gradients) to server. Benefits: data never leaves user device, protects privacy, GDPR compliant.",
+"What is Artificial Intelligence?":"AI is the field of computer science creating systems that perform tasks requiring human intelligence: reasoning, learning, problem solving, language understanding. Includes ML, NLP, computer vision, robotics. Applications: chatbots, self-driving cars, medical diagnosis.",
+"What is machine learning?":"Machine learning is a subset of AI where systems learn from data to improve performance without explicit programming. Types: supervised (labeled data), unsupervised (unlabeled), reinforcement (reward-based). Foundation of modern AI applications.",
+"What is a neural network?":"A neural network is a computational model inspired by the human brain with input layer, hidden layers, and output layer of interconnected neurons. Training adjusts weights through backpropagation. Used for image recognition, language translation, speech recognition.",
+"What is deep learning?":"Deep learning uses neural networks with many hidden layers that automatically learn hierarchical features from raw data. Requires large datasets and GPU computing. Applications: image recognition (CNN), language models (GPT), speech recognition.",
+"Give one real world example of AI.":"A real world example is a spam email filter. It uses machine learning to analyze email content and sender patterns to classify emails as spam or not spam. Other examples: Netflix recommendations, Siri voice assistant, face unlock on smartphones, Google Translate.",
+"What is a prime number? Give three examples.":"A prime number is a natural number greater than 1 that has exactly two factors: 1 and itself. Three examples: 2 (only even prime), 7, 13. Primes are fundamental in cryptography.",
+"What is the difference between rational and irrational numbers?":"Rational numbers can be expressed as fraction p/q. Examples: 1/2, 0.75, 3. Irrational numbers cannot - decimal is infinite and non-repeating. Examples: sqrt(2) = 1.4142..., pi = 3.14159..., e = 2.71828...",
+"What is a function in mathematics? Give an example.":"A mathematical function maps each input to exactly one output. Written as f(x). Example: f(x) = 2x + 3, so f(2) = 7, f(3) = 9. Represented as equation, table, or graph.",
+"What is the Pythagorean theorem?":"In a right-angled triangle: a^2 + b^2 = c^2 where c is hypotenuse. Example: sides 3, 4, 5 - 9 + 16 = 25. Used to calculate distances and verify right angles.",
+"What is the difference between mean, median, and mode?":"Mean (average): sum divided by count. Median: middle value when sorted - resistant to outliers. Mode: most frequent value. Example data {1,2,2,3,100}: mean=21.6, median=2, mode=2.",
+"What is a matrix? What is its order?":"A matrix is a rectangular array of numbers in rows and columns. Order = rows x columns. Example: [[1,2,3],[4,5,6]] has order 2x3. Operations: addition, multiplication, transpose. Used in linear algebra and ML.",
+"What is factorial and how is it calculated?":"Factorial of n (n!) is product of all positive integers from 1 to n. n! = n x (n-1) x ... x 1. Base case: 0! = 1. Examples: 5! = 120, 3! = 6. Used in permutations and combinations.",
+"What is the difference between permutation and combination?":"Permutation: order matters. P(n,r) = n!/(n-r)!. Combination: order does not matter. C(n,r) = n!/(r!(n-r)!). Example choosing 2 from {A,B,C}: permutations = 6. Combinations = 3.",
+"What is probability? What is its range?":"Probability measures likelihood of an event. Range: 0 (impossible) to 1 (certain). Formula: P(event) = favorable outcomes / total outcomes. Example: P(heads) = 1/2 = 0.5.",
+"What is a set? Define union and intersection.":"A set is a collection of distinct unordered elements. Union (A U B): all elements in A OR B. Intersection (A and B): elements in BOTH A and B. Example: A={1,2,3}, B={2,3,4}. Union={1,2,3,4}, Intersection={2,3}.",
+"What is a derivative and what does it represent geometrically?":"Derivative measures rate of change. Geometrically: slope of tangent line at a point. f'(x) > 0: function increasing. f'(x) < 0: decreasing. f'(x) = 0: critical point (possible max or min).",
+"Explain the chain rule in differentiation with an example.":"Chain rule: derivative of f(g(x)) = f'(g(x)) times g'(x). Example: d/dx[sin(x^2)] = cos(x^2) * 2x. Used when differentiating composite functions.",
+"What is integration? How is it related to differentiation?":"Integration is the reverse of differentiation - finds the original function from its derivative. Also calculates area under a curve. Fundamental Theorem of Calculus: differentiation and integration are inverse operations.",
+"What is a determinant of a matrix? When is it zero?":"Determinant is a scalar value from a square matrix. For 2x2: det = ad - bc. Zero when: rows/columns are linearly dependent, matrix is singular (non-invertible).",
+"Explain Bayes theorem with a real world example.":"Bayes theorem: P(A|B) = P(B|A) * P(A) / P(B). Updates probability given new evidence. Example: medical test with 99% accuracy, disease in 1% of population - actual probability of disease if test is positive is much less than 99% due to base rate.",
+"What is a limit in calculus? Give an example.":"A limit describes the value a function approaches as input approaches a specific value. Example: lim(x->0) sin(x)/x = 1 - function is undefined at x=0 but approaches 1. Foundation of derivatives and integrals.",
+"What is the difference between eigenvalues and eigenvectors?":"For matrix A: eigenvector v scales but does not rotate when multiplied by A: A*v = lambda*v. Eigenvalue lambda is the scaling factor. Used in PCA, Google PageRank, quantum mechanics, and facial recognition.",
+"What is a normal distribution and what are its properties?":"Normal distribution: bell-shaped curve symmetric around mean. 68% data within 1 standard deviation, 95% within 2, 99.7% within 3. Fully defined by mean and standard deviation.",
+"Explain the binomial theorem and give an example.":"Binomial theorem expands (a+b)^n as sum of C(n,k) * a^(n-k) * b^k. Example: (a+b)^2 = a^2 + 2ab + b^2. Coefficients from Pascal's triangle.",
+"What is modular arithmetic and where is it applied?":"Modular arithmetic works with remainders. a mod n = remainder when a divided by n. Example: 17 mod 5 = 2. Applications: cryptography (RSA), hash functions, random number generation.",
+"Prove that the square root of 2 is irrational.":"Proof by contradiction: Assume sqrt(2) = p/q with no common factors. Then p^2 = 2q^2 - so p is even, let p = 2k. Then q^2 = 2k^2 - q is also even. But then p and q share factor 2, contradicting our assumption. Therefore sqrt(2) is irrational.",
+"What is a Fourier transform and what is it used for?":"Fourier transform decomposes a signal into its constituent frequencies - converts time-domain to frequency-domain. Applications: audio processing, image compression (JPEG), signal processing, MRI imaging.",
+"Explain the Fundamental Theorem of Calculus.":"FTC connects differentiation and integration as inverse operations. Part 1: if F(x) = integral from a to x of f(t)dt, then F'(x) = f(x). Part 2: integral from a to b of f(x)dx = F(b) - F(a).",
+"What is linear independence in vector spaces?":"A set of vectors is linearly independent if no vector can be written as a linear combination of others. A basis of a vector space is a linearly independent spanning set.",
+"Explain the concept of convexity in optimization.":"Convex function: line segment between any two points lies above or on the graph. Convex functions have a unique global minimum - gradient descent always finds it. Non-convex: multiple local minima - gradient descent may get stuck.",
+"What is a differential equation and give a real world application.":"Differential equation contains derivatives - describes how quantities change. Applications: population growth (dP/dt = kP), Newton's law of cooling, circuit analysis, heat conduction, fluid dynamics.",
+"Explain the Lagrange multiplier method.":"Lagrange multipliers optimize f(x,y) subject to constraint g(x,y) = 0. At optimal point: gradient of f = lambda times gradient of g. Used in economics (maximize utility subject to budget constraint).",
+"What is a Taylor series and when does it converge?":"Taylor series represents a smooth function as infinite polynomial around point a. Converges when |x-a| < radius of convergence R. Used in computing approximations and physics simulations.",
+"Explain the concept of entropy in information theory.":"Entropy measures uncertainty in a random variable. H(X) = -sum P(x) * log2 P(x). High entropy: uniform distribution - high uncertainty. Used in decision trees (information gain = entropy reduction) and data compression.",
+"What is the difference between NP and P problems in complexity theory?":"P: problems solvable in polynomial time. NP: solutions verifiable in polynomial time. Every P problem is in NP. P vs NP: biggest unsolved problem in computer science. NP-complete: hardest NP problems like SAT.",
+"What is addition and subtraction?":"Addition combines numbers to get a sum (+). Subtraction finds the difference (-). Two of the four basic arithmetic operations. Example: 5 + 3 = 8 (addition); 8 - 3 = 5 (subtraction).",
+"What is a fraction?":"A fraction represents part of a whole: numerator/denominator. Example: 3/4 means 3 parts out of 4 equal parts. Operations: add with common denominator, multiply numerators and denominators separately.",
+"What is a percentage?":"Percentage expresses number as fraction of 100. Symbol: %. Formula: (part/whole) x 100. Example: 40 out of 50 = 80%. Used in discounts, exam scores, interest rates, and statistics.",
+"What is an equation?":"An equation is a mathematical statement showing two expressions are equal (= sign). Example: 2x + 3 = 7, solving gives x = 2. Types: linear (degree 1), quadratic (degree 2).",
+"What is a graph in mathematics?":"A graph is a visual representation of mathematical relationships on coordinate axes. Types: line graph (linear functions), parabola (quadratic), bar chart, scatter plot. Graphs reveal trends, patterns, maximum/minimum values.",
+"What is Newton's first law of motion?":"Newton's first law (Law of Inertia): an object at rest stays at rest, and an object in motion continues at same speed and direction unless acted upon by an unbalanced external force.",
+"What is the difference between speed and velocity?":"Speed is scalar - only magnitude. Velocity is vector - magnitude and direction. Example: 60 km/h is speed; 60 km/h north is velocity. Average speed = distance/time; Average velocity = displacement/time.",
+"What is acceleration? Give its formula.":"Acceleration is rate of change of velocity. Formula: a = (v - u) / t where v = final velocity, u = initial velocity, t = time. Unit: m/s^2. Positive: speeding up. Negative (deceleration): slowing down.",
+"What is the difference between mass and weight?":"Mass: amount of matter, scalar, constant everywhere, unit kg. Weight: gravitational force on object, vector, depends on gravity, unit Newton. Weight = mass x g. On Moon: same mass but less weight due to lower gravity.",
+"What is kinetic energy and what is potential energy?":"Kinetic energy: energy of motion. KE = 0.5 x m x v^2. Potential energy: stored energy due to position. Gravitational PE = mgh. Conservation of energy: KE + PE = constant (ignoring friction).",
+"What is Ohm's law?":"Ohm's law: V = IR (Voltage = Current x Resistance). V in Volts, I in Amperes, R in Ohms. If resistance doubles, current halves at constant voltage. Fundamental relationship for analyzing electrical circuits.",
+"What is the difference between a conductor and an insulator?":"Conductor allows electric current to flow freely - has free electrons. Examples: copper, aluminum. Insulator does not allow current - electrons tightly bound. Examples: rubber, glass, plastic. Semiconductors (silicon) have conductivity between both.",
+"What is frequency and wavelength of a wave?":"Frequency (f): number of complete cycles per second, unit Hertz (Hz). Wavelength: distance between two consecutive crests, unit meters. Relationship: wave speed v = f x wavelength. Higher frequency = shorter wavelength.",
+"What is the speed of light?":"Speed of light in vacuum: c = 3 x 10^8 m/s (approximately 300,000 km/s). Ultimate speed limit - nothing with mass can reach it. Used in E = mc^2. Light takes about 8 minutes to travel from Sun to Earth.",
+"What is gravity?":"Gravity is a fundamental force of attraction between all objects with mass. Newton's law: F = Gm1m2/r^2. On Earth's surface: g = 9.8 m/s^2. Keeps planets in orbit, causes tides, makes objects fall.",
+"Explain Newton's three laws of motion with examples.":"1st Law (Inertia): object stays at rest or uniform motion without external force. 2nd Law: F = ma - heavier object needs more force for same acceleration. 3rd Law (Action-Reaction): every action has equal and opposite reaction - rocket propulsion.",
+"What is the law of conservation of energy?":"Energy cannot be created or destroyed - only converted from one form to another. Total energy in isolated system remains constant. Example: pendulum - PE at top converts to KE at bottom.",
+"Explain the concept of electric field and magnetic field.":"Electric field: region around charged particle where other charges experience force. Unit: N/C. Magnetic field: region around magnetic material or current where magnetic force acts. Unit: Tesla.",
+"What is Faraday's law of electromagnetic induction?":"Faraday's law: changing magnetic flux through a circuit induces an EMF. EMF = -d(Phi)/dt. Lenz's law: induced current opposes the change. Applications: electric generators, transformers, electric motors.",
+"What is the difference between transverse and longitudinal waves?":"Transverse: particle oscillation perpendicular to wave direction. Examples: light, water waves. Longitudinal: particle oscillation parallel to wave direction. Example: sound waves. Transverse waves can be polarized; longitudinal cannot.",
+"Explain the photoelectric effect.":"When light hits metal surface, electrons are ejected if frequency exceeds threshold. Explained by Einstein using photons: E = hf. Proved quantum nature of light and won Einstein the Nobel Prize.",
+"What is Kirchhoff's voltage and current law?":"KVL: sum of all voltages around any closed loop equals zero - conservation of energy. KCL: sum of currents entering a node equals sum leaving - conservation of charge. Essential for analyzing complex electrical circuits.",
+"What is the Doppler effect? Give an example.":"Doppler effect: change in observed frequency when source and observer move relative to each other. Example: ambulance siren sounds higher pitched approaching and lower as it passes.",
+"What is simple harmonic motion?":"SHM: periodic motion where restoring force is proportional to displacement and always toward equilibrium. F = -kx. Examples: pendulum (small angles), spring-mass system. Spring period: T = 2*pi*sqrt(m/k).",
+"What is the difference between series and parallel circuits?":"Series: components in single path - same current, voltages add up. If one fails, all stop. Parallel: components across same two points - same voltage, currents add up. If one fails, others continue. Household wiring uses parallel.",
+"Explain Einstein's theory of special relativity.":"Special relativity: 1) Laws of physics same for all inertial observers. 2) Speed of light is constant for all observers. Consequences: time dilation, length contraction, mass-energy equivalence E = mc^2.",
+"What is quantum mechanics and how does it differ from classical mechanics?":"Quantum mechanics describes matter and energy at atomic scales. Differences: energy is quantized (discrete levels), wave-particle duality, Heisenberg uncertainty principle, probability-based wavefunctions. Classical mechanics works for large objects.",
+"Explain the wave-particle duality of light.":"Light exhibits both wave and particle properties. Wave: interference, diffraction, polarization. Particle (photons): photoelectric effect, Compton scattering. Young's double-slit shows both behaviors.",
+"What is Heisenberg's uncertainty principle?":"Cannot simultaneously know exact position and exact momentum of a particle. Delta(x) x Delta(p) >= hbar/2. Not a measurement limitation - fundamental property of quantum systems.",
+"Explain the concept of entropy in thermodynamics.":"Entropy measures degree of disorder in a system. Second law: entropy of isolated system always increases or stays same - never decreases spontaneously. Explains why heat flows hot to cold and why processes are irreversible.",
+"What is nuclear fission and fusion? Compare their energy outputs.":"Fission: heavy nucleus splits releasing energy - nuclear reactors, fuel: Uranium-235. Fusion: light nuclei combine - powers the Sun. Fusion releases 3-4x more energy per unit mass than fission but requires extreme temperature.",
+"What are Maxwell's equations and what do they describe?":"Maxwell's four equations describe all of classical electromagnetism: Gauss electric law, Gauss magnetic law (no magnetic monopoles), Faraday's law, Ampere-Maxwell law. Together they predict electromagnetic waves travel at speed of light.",
+"Explain the concept of superconductivity.":"Superconductivity: some materials lose all electrical resistance below a critical temperature. Current flows without any energy loss. BCS theory: Cooper pairs move without scattering. Applications: MRI magnets, particle accelerators, maglev trains.",
+"What is dark matter and why do physicists believe it exists?":"Dark matter: hypothetical matter that does not emit or absorb light. Evidence: galaxies rotate faster at edges than visible matter can explain (flat rotation curves), gravitational lensing stronger than expected.",
+"Explain the Pauli exclusion principle.":"No two fermions (electrons) can occupy the same quantum state in the same system. Electron state defined by 4 quantum numbers. Explains atomic shell structure, stability of matter, and properties of metals.",
+"What is physics?":"Physics studies matter, energy, space, time and their interactions. Branches: classical mechanics, thermodynamics, electromagnetism, quantum mechanics, relativity. Applications: engineering, medicine (MRI, X-ray), lasers, transistors, GPS.",
+"What is force?":"Force is a push or pull on an object that can change its motion, shape, or direction. Vector quantity - magnitude and direction. Unit: Newton (N). Types: contact forces (friction, normal, tension) and non-contact (gravity, magnetic, electric). F = ma.",
+"What is energy?":"Energy is the capacity to do work. Cannot be created or destroyed, only converted. Unit: Joule (J). Types: kinetic (motion), potential (position), thermal (heat), chemical (bonds), electrical, nuclear. Work = Force x displacement.",
+"What is electricity?":"Electricity is the flow of electric charge (usually electrons). Current: rate of charge flow, unit Ampere. Voltage: energy per charge, unit Volt. DC (direct current) and AC (alternating current - household supply). Governed by V = IR.",
+"What is a wave?":"A wave is a disturbance that transfers energy through matter or space without permanently moving matter. Properties: wavelength, frequency, amplitude, speed. Types: transverse (light, water waves) and longitudinal (sound).",
+"What is the difference between LAN, WAN, and MAN?":"LAN (Local Area Network): covers small area like home or office - fast, privately owned. MAN (Metropolitan Area Network): covers a city. WAN (Wide Area Network): covers large geographic areas - internet is the largest WAN.",
+"What is an IP address? What is the difference between IPv4 and IPv6?":"IP address is unique numerical identifier for devices on a network. IPv4: 32-bit, dotted decimal (192.168.1.1), about 4.3 billion addresses - nearly exhausted. IPv6: 128-bit, hexadecimal, supports 340 undecillion addresses.",
+"What is a MAC address?":"MAC (Media Access Control) address is unique 48-bit hardware identifier assigned to a network card by manufacturer. Written as 6 hex pairs: 00:1A:2B:3C:4D:5E. Used within local networks (Layer 2). Unlike IP, MAC is permanent.",
+"What is a router and what does it do?":"Router connects different networks and forwards data packets between them based on destination IP addresses. Operates at Network Layer (Layer 3). Maintains routing table with best paths. Home router connects LAN to internet.",
+"What is the difference between HTTP and HTTPS?":"HTTP: web protocol, data transmitted in plaintext - not secure. HTTPS: HTTP with SSL/TLS encryption - data encrypted in transit. Uses port 443 (HTTP uses 80). All modern websites use HTTPS. Browser shows padlock icon for HTTPS.",
+"What is DNS and what does it do?":"DNS (Domain Name System) translates domain names to IP addresses - internet's phone book. Example: google.com -> 142.250.180.14. Without DNS you would need to memorize IP addresses.",
+"What is a firewall?":"Firewall monitors and controls network traffic based on security rules. Blocks unauthorized access while allowing legitimate traffic. Types: packet filtering, stateful inspection, application layer. First line of defense in network security.",
+"What is bandwidth?":"Bandwidth is maximum data that can be transmitted over a network per unit time. Measured in bps, Mbps, Gbps. Higher bandwidth = more data transferred simultaneously. Affected by medium type, network congestion, and equipment quality.",
+"What is the difference between a hub and a switch?":"Hub: Layer 1 device that broadcasts data to ALL connected devices - wasteful, creates collisions. Switch: Layer 2 device that sends data only to specific destination device using MAC address table - efficient.",
+"What is Wi-Fi and how does it work?":"Wi-Fi uses radio waves for wireless network access. Router broadcasts radio signals. Devices with wireless adapters connect using IEEE 802.11 standards. Operates on 2.4 GHz (longer range, slower) or 5 GHz (shorter range, faster) bands.",
+"Explain the OSI model and its seven layers.":"OSI model: 7-Application (HTTP, FTP), 6-Presentation (encryption), 5-Session (authentication), 4-Transport (TCP/UDP), 3-Network (IP, routing), 2-Data Link (MAC, switches), 1-Physical (cables, signals). Mnemonic: All People Seem To Need Data Processing.",
+"What is the TCP/IP model? How does it differ from OSI?":"TCP/IP has 4 layers: Application (combines OSI 5,6,7), Transport (TCP/UDP), Internet (IP routing), Network Access (physical + data link). OSI is theoretical 7-layer reference model. TCP/IP is what the internet actually implements.",
+"What is the three-way handshake in TCP?":"TCP three-way handshake establishes connection. Step 1: Client sends SYN. Step 2: Server responds with SYN-ACK. Step 3: Client sends ACK. Connection established. Synchronizes sequence numbers for reliable delivery.",
+"What is NAT and why is it used?":"NAT (Network Address Translation) translates private IP addresses to public IP addresses. Benefits: conserves scarce IPv4 addresses (multiple devices share one public IP), adds security by hiding internal network structure.",
+"What is the difference between TCP and UDP?":"TCP: connection-oriented, reliable, guarantees delivery with acknowledgments - slower. Used for web, email, file transfer. UDP: connectionless, unreliable, faster - no guarantees. Used for streaming, gaming, DNS, VoIP.",
+"What is subnetting? Calculate the subnet mask for /24.":"Subnetting divides a network into smaller sub-networks. /24 means 24 bits for network, 8 bits for hosts. Subnet mask: 255.255.255.0. A /24 network supports 254 usable hosts.",
+"What is ARP and how does it work?":"ARP (Address Resolution Protocol) maps IP addresses to MAC addresses within local network. Device broadcasts ARP request for an IP. Device with that IP responds with its MAC. Sender caches the mapping in ARP table.",
+"What is DHCP and why is it used?":"DHCP automatically assigns IP addresses and network configuration to devices. Without DHCP: manually configure every device. DHCP server assigns: IP address, subnet mask, default gateway, DNS server.",
+"What is the difference between symmetric and asymmetric encryption?":"Symmetric: same key for encryption and decryption - fast, efficient for large data but key distribution is a problem. Examples: AES-256. Asymmetric: public key encrypts, private key decrypts - solves key distribution. Slower. Examples: RSA.",
+"What is a VPN and how does it provide security?":"VPN creates encrypted tunnel between your device and a VPN server. Benefits: encrypts data on public Wi-Fi, hides real IP address, allows secure remote corporate access. Protocols: OpenVPN, WireGuard, IPSec.",
+"Explain the BGP protocol and how internet routing works.":"BGP (Border Gateway Protocol) routes traffic between autonomous systems (AS) like ISPs. BGP routers exchange routing tables. Routers select best paths based on AS path length and routing policies.",
+"What is OSPF and how does it differ from RIP?":"OSPF: link-state protocol, builds complete topology map using Dijkstra's algorithm, fast convergence, scales well. RIP: distance-vector, uses hop count (max 15 hops), slow convergence, limited scalability. OSPF preferred for enterprise networks.",
+"Explain SSL/TLS handshake process in detail.":"TLS handshake: 1) Client Hello (supported ciphers). 2) Server Hello (selects cipher + sends certificate). 3) Client verifies certificate with CA. 4) Client generates session key, encrypts with server public key. 5) Server decrypts. 6) Both now have shared session key.",
+"What is a DDoS attack and how can it be mitigated?":"DDoS floods target with massive traffic from thousands of compromised devices (botnet) making service unavailable. Mitigation: rate limiting, traffic scrubbing centers, CDN, BGP blackholing, Cloudflare DDoS protection.",
+"Explain the concept of Quality of Service (QoS) in networking.":"QoS prioritizes certain traffic types to ensure critical applications get sufficient bandwidth and low latency. Example: prioritize VoIP calls over file downloads. Mechanisms: traffic classification, DSCP marking, priority queuing.",
+"What is SDN (Software Defined Networking) and its advantages?":"SDN separates control plane from data plane. Control plane moves to centralized software controller. Advantages: centralized management, programmable network, faster deployment, easier automation.",
+"Explain MPLS and its role in modern networking.":"MPLS routes traffic using short labels instead of long network addresses. Labels applied at network edge, routers forward based on labels - faster than IP lookup. Used in WAN connections, QoS, VPNs.",
+"What is a man-in-the-middle attack and how to prevent it?":"MITM: attacker secretly intercepts communication between two parties. Techniques: ARP poisoning, rogue Wi-Fi hotspot, DNS spoofing. Prevention: HTTPS with certificate verification, HSTS, certificate pinning, VPN on public Wi-Fi.",
+"What is network congestion control in TCP?":"TCP congestion control prevents overwhelming network. Mechanisms: Slow Start, Congestion Avoidance (increase linearly after threshold), Fast Retransmit, Fast Recovery. Algorithms: CUBIC, BBR used in modern systems.",
+"Explain the difference between stateful and stateless firewalls.":"Stateless firewall: examines each packet independently - fast but no context. Stateful firewall: tracks full state of active connections - understands context (TCP handshake state), more secure and intelligent.",
+"What is the internet?":"The internet is a global network of billions of interconnected computers communicating using TCP/IP protocols. Services: World Wide Web, email, file transfer, streaming, messaging. Physical infrastructure: undersea fiber optic cables, data centers, routers.",
+"What is a network?":"A network is two or more computers connected to share data, resources, and services. Can be wired (Ethernet cables) or wireless (Wi-Fi). Types: PAN, LAN, MAN, WAN. Requires hardware (switches, routers) and protocols like TCP/IP.",
+"What is a website?":"A website is a collection of web pages and resources stored on a web server, accessible via the internet using a URL in a browser. Built with HTML (structure), CSS (style), JavaScript (interactivity).",
+"What is email?":"Email (Electronic Mail) is a digital messaging service for exchanging messages over the internet. Uses SMTP for sending and IMAP/POP3 for receiving. Components: sender, recipient, subject, body, attachments.",
+"What is a database and why do we use it?":"A database is an organized collection of structured data managed by a DBMS. Benefits: efficient querying of large data, data integrity, concurrent multi-user access, security, reduced redundancy. Examples: MySQL, PostgreSQL, MongoDB.",
+"What is the difference between SQL and NoSQL?":"SQL (relational): structured tables, predefined schema, ACID transactions, complex joins. Examples: MySQL, PostgreSQL. NoSQL: flexible formats, horizontal scaling, eventual consistency. Examples: MongoDB, Redis, Cassandra.",
+"What is a primary key?":"Primary key uniquely identifies each row in a table. Rules: must be unique for every record, cannot be NULL. Ensures data integrity, enables efficient searching, indexed automatically.",
+"What is a foreign key?":"Foreign key is a column referencing the primary key of another table. Enforces referential integrity - cannot insert value not in referenced table. Example: Orders.CustomerID references Customers.CustomerID.",
+"What is a table in a relational database?":"A table organizes data in rows (records) and columns (fields). Each column has a specific data type. Each row is a unique record. Tables relate to each other via primary and foreign keys.",
+"What is SELECT statement in SQL?":"SELECT retrieves data from tables. Basic syntax: SELECT columns FROM table WHERE condition ORDER BY column. SELECT * gets all columns. WHERE filters rows. ORDER BY sorts. Example: SELECT Name FROM Students WHERE Age > 18.",
+"What is the difference between DELETE and DROP in SQL?":"DELETE: DML command removing specific rows - table structure preserved, can be rolled back. TRUNCATE: DDL removing all rows - faster. DROP: DDL removing entire table including structure permanently - cannot be undone.",
+"What is a NULL value in SQL?":"NULL represents missing, unknown, or not applicable data - NOT zero or empty string. Cannot use = or != to compare; must use IS NULL or IS NOT NULL. COALESCE(column, default) returns first non-NULL.",
+"What is an index in a database?":"Index is a data structure (usually B-tree) improving retrieval speed without scanning entire table. Trade-off: faster reads but slower writes. Primary keys auto-indexed. Create indexes on frequently searched columns.",
+"What is CRUD?":"CRUD = Create, Read, Update, Delete - four fundamental database operations. Create: INSERT INTO. Read: SELECT FROM. Update: UPDATE SET. Delete: DELETE FROM. Foundation of all data-driven applications.",
+"What are the ACID properties of a database transaction?":"Atomicity: transaction is all-or-nothing. Consistency: database moves from one valid state to another. Isolation: concurrent transactions do not interfere. Durability: committed transactions persist even after crashes.",
+"What is normalization? Explain 1NF, 2NF, and 3NF.":"Normalization reduces redundancy. 1NF: atomic values, no repeating groups, primary key defined. 2NF: 1NF + no partial dependencies. 3NF: 2NF + no transitive dependencies (non-key attributes depend only on primary key).",
+"What is a JOIN in SQL? Explain INNER, LEFT, and RIGHT JOIN.":"JOIN combines rows from tables based on related column. INNER JOIN: only matching rows in BOTH tables. LEFT JOIN: ALL rows from left table + matching from right (NULL if no match). RIGHT JOIN: ALL rows from right + matching from left.",
+"What is a stored procedure and what are its advantages?":"Stored procedure is precompiled named SQL statements saved in database. Advantages: improved performance, reduced network traffic, code reuse, enhanced security, easier maintenance.",
+"What is the difference between WHERE and HAVING in SQL?":"WHERE filters rows BEFORE grouping - cannot use aggregate functions. HAVING filters groups AFTER GROUP BY - used with aggregate functions. Execution order: WHERE first, then GROUP BY, then HAVING.",
+"What is a view in SQL?":"View is a virtual table based on a saved SELECT query - does not store data itself. Benefits: simplifies complex queries, provides security (hide sensitive columns), data abstraction. Created with CREATE VIEW statement.",
+"What is database indexing and how does it improve performance?":"Indexing creates a separate data structure (B-tree) for fast row lookup without full table scan. Without index: O(n) full scan. With index: O(log n) lookup. Downside: extra storage and slower INSERT/UPDATE/DELETE.",
+"What is the difference between clustered and non-clustered index?":"Clustered index: physically reorders table rows on disk to match index order - only one per table, usually primary key. Non-clustered: separate structure with pointers to rows - can have multiple per table.",
+"Explain the concept of database transactions.":"A transaction is a sequence of operations treated as a single unit - all succeed or all fail. Use COMMIT to save permanently or ROLLBACK to undo all changes. Essential for banking and any multi-step operation.",
+"What is denormalization and when is it used?":"Denormalization intentionally introduces redundancy to improve read performance. Reduces expensive JOIN operations. Used when read performance is critical. Trade-off: faster reads but data redundancy and more complex updates.",
+"Explain database concurrency control and locking mechanisms.":"Shared lock: multiple readers allowed, no writers. Exclusive lock: only one writer, no readers. Two-phase locking: acquire all locks before releasing any. Deadlock can occur - handled with timeouts or deadlock detection.",
+"What is the difference between optimistic and pessimistic locking?":"Pessimistic locking: assumes conflicts will happen - locks resources immediately. Safe but can cause bottlenecks. Optimistic locking: assumes conflicts are rare - checks version number before commit, rollback if conflict detected.",
+"Explain the CAP theorem in distributed databases.":"CAP: distributed system can guarantee only 2 of 3: Consistency, Availability, Partition Tolerance. Systems choose between CP (consistent) or AP (available).",
+"What is database sharding and when is it used?":"Sharding splits large table across multiple database servers. Each shard holds subset of data. Used when single server cannot handle data volume. Benefits: horizontal scalability. Challenges: cross-shard queries.",
+"Explain the concept of MVCC in PostgreSQL.":"MVCC (Multi-Version Concurrency Control): each transaction sees a snapshot of the database at a point in time. Writers create new versions of rows; readers see old versions - no read-write conflicts.",
+"What is a distributed database? What challenges does it face?":"Distributed database stores data across multiple geographically distributed nodes. Challenges: network partitions, maintaining consistency (CAP theorem), distributed transactions, data replication lag.",
+"Explain the difference between OLTP and OLAP systems.":"OLTP: many small fast transactions, normalized, write-optimized, real-time. Examples: banking, e-commerce. OLAP: complex analytical queries on large historical data, read-optimized. Examples: data warehouses.",
+"What is query optimization? How does a query planner work?":"Query optimizer chooses the most efficient execution plan. Steps: parse SQL, generate possible plans, estimate cost of each plan using statistics, execute cheapest plan.",
+"Explain the concept of eventual consistency.":"Eventual consistency: distributed system guarantees that if no new updates are made, all nodes will eventually converge to the same value. Does not guarantee immediate consistency. Used in Cassandra, DynamoDB.",
+"What is a graph database? When would you use it over relational?":"Graph database stores data as nodes (entities) and edges (relationships). Optimized for traversing relationships. Examples: Neo4j, Amazon Neptune. Use when: data is highly connected (social networks, recommendation engines).",
+"What is a database?":"A database is an organized collection of structured data managed by a DBMS. Allows efficient storage, retrieval, updating, deletion. Types: relational (MySQL), NoSQL (MongoDB), in-memory (Redis). Essential for virtually every modern application.",
+"What is SQL?":"SQL (Structured Query Language) is the standard language for relational databases. DQL: SELECT. DML: INSERT, UPDATE, DELETE. DDL: CREATE, ALTER, DROP. DCL: GRANT, REVOKE. TCL: COMMIT, ROLLBACK.",
+"What is a table?":"A table is the fundamental storage unit in relational database. Rows (records) and columns (attributes). Each column has specified data type. Each row is a unique record identified by primary key.",
+"What is a query?":"A query is a request to retrieve or manipulate data in SQL. Most common: SELECT to retrieve data. Example: SELECT * FROM Students WHERE Grade = 'A'. Queries use JOINs, GROUP BY, and aggregate functions.",
+"What is data?":"Data is raw, unprocessed facts and figures. When processed and given context, data becomes information. Types: structured (tables), unstructured (text, images). Database systems are built to store and manage data efficiently.",
+"What is an operating system and name three examples?":"OS manages computer hardware and software resources, providing services for applications. Core functions: process management, memory management, file system, device management, security. Three examples: Windows, Linux (popular for servers), macOS.",
+"What is a process and what is a thread?":"Process: independent program in execution with its own memory space, code, and resources - heavyweight. Thread: smallest execution unit within a process, shares process memory - lightweight. Threads cheaper to create and switch than processes.",
+"What is the difference between primary and secondary memory?":"Primary (RAM): volatile (lost on power off), fast, directly accessed by CPU, limited and expensive. Secondary (HDD/SSD): non-volatile, slower, not directly accessed by CPU, large and cheap.",
+"What is a file system?":"File system organizes and manages how data is stored on storage devices. Provides hierarchical structure with directories and files. Manages names, locations, sizes, permissions, metadata. Examples: NTFS (Windows), ext4 (Linux), APFS (macOS).",
+"What is a kernel?":"Kernel is the core of the OS with complete hardware control. Runs in privileged kernel mode. Manages CPU scheduling, memory allocation, device drivers, system calls. Monolithic kernel (Linux): all services in kernel. Microkernel: minimal core, services in user space.",
+"What is the difference between user mode and kernel mode?":"User mode: restricted - applications run with limited hardware access. Kernel mode: privileged - OS kernel runs with full hardware access. Applications switch via system calls. Separation protects system stability and security.",
+"What is virtual memory?":"Virtual memory uses disk space to extend apparent RAM. OS manages pages - swaps inactive pages to disk, loads needed pages to RAM on demand. Allows running programs larger than physical RAM. Page fault: required page not in RAM.",
+"What is a system call?":"System call is the interface between user programs and OS kernel. User programs cannot directly access hardware - they request OS services via system calls. Examples: open() for files, fork() to create processes. Triggers switch from user mode to kernel mode.",
+"What is multitasking?":"Multitasking allows multiple processes to appear to run simultaneously on one CPU. OS rapidly switches between processes (context switching). Preemptive: OS forcibly interrupts after time slice. Modern OS uses preemptive multitasking.",
+"What is a shell?":"Shell is command-line interpreter allowing users to interact with OS by typing commands. Types: Bash (most common Linux/macOS), Zsh, PowerShell (Windows). Shell scripting automates repetitive administrative tasks.",
+"Explain the different CPU scheduling algorithms.":"FCFS: simple, non-preemptive, convoy effect. SJF: optimal average waiting time. Round Robin: equal time slices, preemptive, good for time-sharing. Priority Scheduling: highest priority first, starvation possible.",
+"What is a deadlock? State the four necessary conditions.":"Deadlock: processes permanently blocked. Four Coffman conditions: 1) Mutual Exclusion, 2) Hold and Wait, 3) No Preemption (resource cannot be forcibly taken), 4) Circular Wait.",
+"What is paging in memory management?":"Paging divides physical memory into fixed-size frames and logical memory into same-size pages. OS maintains page table mapping logical pages to physical frames. Benefits: eliminates external fragmentation, allows non-contiguous allocation.",
+"What is segmentation in memory management?":"Segmentation divides program into logical segments: code, data, stack, heap - each with variable size. Segment table maps segment number to base address and size limit. Problem: external fragmentation.",
+"What is the difference between process and thread?":"Process: separate memory space, expensive creation and context switching. Thread: shares process memory - cheap creation and switching, fast communication via shared memory but needs synchronization to prevent race conditions.",
+"Explain the producer-consumer problem.":"Classic synchronization: producer adds to bounded buffer; consumer removes from it. Solution: use three semaphores - full (count of filled slots), empty (count of empty slots), mutex (mutual exclusion).",
+"What is a semaphore and how is it used?":"Semaphore is a synchronization variable with two atomic operations: wait/P (decrement, block if 0) and signal/V (increment, wake blocked). Binary semaphore: acts like mutex. Counting semaphore: controls access to pool of resources.",
+"What is thrashing in an operating system?":"Thrashing: OS spends more time swapping pages in and out than executing processes. Occurs when physical memory is insufficient. Solution: reduce multiprogramming degree, add more RAM, use working set model.",
+"What is the difference between preemptive and non-preemptive scheduling?":"Preemptive: OS can forcibly interrupt running process after time slice - better response time, more complex. Non-preemptive: process runs until it voluntarily yields, blocks, or terminates - simpler but can cause starvation.",
+"What is inter-process communication (IPC)?":"IPC allows processes to exchange data and synchronize. Mechanisms: Pipes (unidirectional data stream), Message Queues, Shared Memory (fastest), Signals (event notifications), Sockets.",
+"Explain the Banker's algorithm for deadlock avoidance.":"Banker's algorithm checks if granting a request leads to safe state. Safe state: exists sequence where each process can complete using available resources. Tentatively allocate and run safety algorithm - if safe: grant. If not: make process wait.",
+"What is the difference between demand paging and pre-paging?":"Demand paging: loads pages only when referenced - minimizes memory usage, causes page faults. Pre-paging: loads pages before they are needed - reduces page faults but may load unnecessary pages wasting memory.",
+"Explain the working of a page replacement algorithm (LRU, FIFO, Optimal).":"FIFO: replace oldest page - simple but causes Belady's anomaly. Optimal: replace page not used for longest time in future - lowest fault rate but requires future knowledge. LRU: replace page not used for longest time in past - used in practice.",
+"What is a microkernel architecture? Compare with monolithic kernel.":"Microkernel: minimal kernel with only essential services - other services run as user-space processes. More stable, more secure. Slower due to IPC overhead. Monolithic: all services in kernel - faster, less modular.",
+"Explain RAID levels and their tradeoffs.":"RAID 0: striping - best performance, no redundancy. RAID 1: mirroring - full redundancy, 50% storage waste. RAID 5: striping with parity across 3+ disks - good balance of performance, redundancy, storage efficiency.",
+"What is the difference between soft and hard real-time systems?":"Hard real-time: missing a deadline is catastrophic. Examples: aircraft control, pacemakers. Soft real-time: missing a deadline degrades performance but is not catastrophic. Examples: video streaming, online gaming.",
+"Explain memory-mapped I/O vs port-mapped I/O.":"Memory-mapped I/O: device registers mapped into main memory address space - use standard load/store instructions. Port-mapped I/O: device registers in separate I/O address space - use special IN/OUT CPU instructions.",
+"What is the Copy-on-Write mechanism?":"Copy-on-Write (COW): when a process forks, parent and child initially share same memory pages. When either modifies a page, OS creates a private copy of that page only. Benefit: fast fork, saves memory.",
+"Explain the difference between mutex and semaphore.":"Mutex: binary lock with ownership - only the thread that locked it can unlock it, used to protect critical sections. Semaphore: counting, no ownership - any thread can signal/wait, used for resource counting.",
+"What is a hypervisor and what types exist?":"Hypervisor creates and manages virtual machines. Type 1 (Bare-metal): runs directly on hardware without host OS - better performance, used in data centers. Examples: VMware ESXi, Hyper-V. Type 2 (Hosted): runs on top of host OS. Examples: VirtualBox.",
+"What is an operating system?":"An operating system is system software managing computer hardware and software resources. Core functions: process management, memory management, file system, device management, user interface, security. Examples: Windows, Linux, macOS, Android.",
+"What is Windows?":"Windows is Microsoft's series of operating systems - most widely used desktop OS worldwide. Uses NTFS file system, supports graphical user interface, multitasking. Current version: Windows 11. Manages users, files, applications, hardware.",
+"What is a file?":"A file is a named collection of related data stored on a storage device. Can contain text, images, audio, video, or executable code. Each file has name, extension (.txt, .jpg, .exe), size, location, and metadata.",
+"What is a folder?":"A folder (directory) is a container in the file system that organizes and stores files and other folders creating a tree hierarchy. Makes file management easier. Can be created, renamed, moved, copied, and deleted.",
+"What is RAM?":"RAM (Random Access Memory) is volatile primary memory that temporarily stores data the CPU is actively working with. Much faster than HDD/SSD. More RAM allows more programs running simultaneously. Data lost when power off.",
+"What is software engineering?":"Software engineering applies systematic engineering principles to software development. Covers entire lifecycle: requirements, design, coding, testing, deployment, maintenance. Emphasizes reliability, scalability, maintainability, project management, and team collaboration.",
+"What is the software development life cycle (SDLC)?":"SDLC is a structured process: 1. Planning. 2. Requirements Analysis. 3. System Design. 4. Implementation (coding). 5. Testing. 6. Deployment. 7. Maintenance.",
+"What is the difference between waterfall and agile methodology?":"Waterfall: linear, sequential - each phase fully complete before next begins, rigid requirements. Agile: iterative - short sprints (2-4 weeks) delivering working software, embraces changing requirements.",
+"What is a requirement in software engineering?":"Requirements specify what a system must do. Functional: specific behaviors - 'user can reset password'. Non-functional: quality attributes - performance, security, scalability. Poorly defined requirements are the number one cause of project failure.",
+"What is a use case diagram?":"Use case diagram (UML) shows interactions between actors and system functionalities. Shows WHAT the system does from user perspective. Elements: actors (stick figures), use cases (ovals), system boundary (rectangle).",
+"What is version control and why is it important?":"Version control tracks all changes to source code over time. Git is the standard distributed VCS. Importance: team collaboration, complete history of every change, feature branching, rollback when bugs are introduced.",
+"What is the difference between black box and white box testing?":"Black box testing: tester has no knowledge of internal code - tests based on requirements and expected input/output. White box testing: tester knows internal code structure - tests based on logic, code paths, branches.",
+"What is a bug and what is a feature?":"A bug is an unintended error causing incorrect behavior or crashes. A feature is an intentional, designed functionality adding value to the software. Bug tracking tools: Jira, GitHub Issues.",
+"What is documentation in software engineering?":"Documentation records software knowledge. Types: requirements documents, design documents, API docs, user manuals, code comments. Good documentation reduces onboarding time, aids maintenance, enables team collaboration.",
+"What is a sprint in agile?":"Sprint is a fixed time-boxed iteration in Agile/Scrum, typically 1-4 weeks. Team selects tasks from product backlog. Sprint ceremonies: Planning, Daily Standup, Sprint Review (demo to stakeholders), Retrospective.",
+"Explain the difference between functional and non-functional requirements.":"Functional requirements define what the system should DO - specific behaviors. Non-functional define how well the system performs - quality attributes: Performance, Security, Scalability, Availability.",
+"What is a design pattern? Explain MVC pattern.":"Design pattern is a proven reusable solution to a common design problem. MVC (Model-View-Controller) separates concerns: Model (data and business logic), View (user interface), Controller (handles user input). Used in Django, Rails, Spring MVC.",
+"What is unit testing and integration testing?":"Unit testing: tests individual functions or components in isolation - fast, easy to pinpoint bugs. Integration testing: tests how multiple components work together - ensures they communicate correctly.",
+"What is continuous integration and continuous deployment (CI/CD)?":"CI: developers frequently merge code - automated builds and tests run on every commit. CD: automatically deploys every passing build to production. Benefits: faster releases, reduced risk. Tools: Jenkins, GitHub Actions.",
+"What is the difference between verification and validation?":"Verification: are we building the system RIGHT? Checks system matches specifications. Validation: are we building the RIGHT system? Checks system meets actual user needs.",
+"Explain the concept of technical debt.":"Technical debt: shortcuts made to deliver faster - create future maintenance burden. Examples: skipping documentation, duplicating code. Accumulates over time making changes slower and riskier.",
+"What is refactoring and why is it important?":"Refactoring: restructuring existing code without changing its external behavior - improves internal structure, readability, and maintainability. Requires comprehensive test suite to ensure behavior is unchanged.",
+"What is a UML diagram? Name four types.":"UML (Unified Modeling Language) provides standard notation for software design. Four types: Class Diagram, Use Case Diagram (actors and system functions), Sequence Diagram (time-ordered interactions), Activity Diagram (workflow flowchart).",
+"What is code review and what are its benefits?":"Code review: systematic examination of source code by other developers before merging. Benefits: catches bugs early, shares knowledge, enforces coding standards, improves code quality, mentors junior developers.",
+"What is software coupling and cohesion?":"Coupling: how dependent modules are on each other - low coupling is desirable. Cohesion: how focused a module is on one purpose - high cohesion is desirable. Goal: low coupling + high cohesion = maintainable, modular, testable code.",
+"Explain SOLID principles with examples.":"S - Single Responsibility: class has one reason to change. O - Open/Closed: open for extension, closed for modification. L - Liskov Substitution: subclasses work wherever parent is expected. I - Interface Segregation: prefer small interfaces. D - Dependency Inversion: depend on abstractions.",
+"What is domain-driven design (DDD)?":"DDD is a software design approach focusing on modeling software to match real-world domain. Key concepts: Ubiquitous Language (shared vocabulary), Bounded Context (clear domain boundaries), Aggregates, Domain Events, Repositories.",
+"What is the difference between microservices and SOA?":"SOA: coarse-grained services communicating via enterprise service bus, shared databases common. Microservices: fine-grained independently deployable services communicating via lightweight APIs, each has own database.",
+"Explain test-driven development (TDD) and its benefits.":"TDD: write failing test FIRST, then write minimum code to pass test, then refactor. Red-Green-Refactor cycle. Benefits: code has test coverage by design, catches regressions immediately, design naturally becomes testable.",
+"What is DevOps and how does it bridge development and operations?":"DevOps combines development and operations for faster, more reliable software delivery. Key practices: CI/CD pipelines, infrastructure as code, automated testing, monitoring (Prometheus, Grafana), shared responsibility for production.",
+"Explain the concept of fault tolerance in software systems.":"Fault tolerance: system continues operating correctly when components fail. Techniques: Redundancy (multiple instances), Replication, Circuit Breaker pattern, Retry with exponential backoff, Graceful degradation.",
+"What is software entropy and how do you manage it?":"Software entropy: tendency of software systems to become more complex, harder to maintain over time. Managed by: regular refactoring, enforcing coding standards, removing dead code, updating dependencies, writing tests.",
+"Explain the event sourcing pattern.":"Event sourcing: store all changes to application state as a sequence of events rather than just current state. Current state = replay of all events. Benefits: complete audit trail, can rebuild state at any point in time. Used with CQRS pattern.",
+"What is Conway's Law and how does it affect software architecture?":"Conway's Law: organizations design systems that mirror their communication structure. Teams create software with same boundaries as their team boundaries. Inverse Conway Maneuver: structure teams to encourage desired architecture.",
+"What is chaos engineering?":"Chaos engineering: intentionally injecting failures into production systems to test resilience and identify weaknesses. Practices: randomly kill instances, introduce network latency. Netflix Chaos Monkey is a famous example.",
+"What is software?":"Software is a collection of programs, instructions, and data telling a computer how to perform tasks. Types: system software (OS), application software (Word, Chrome), programming software (compilers, IDEs).",
+"What is an app?":"An app (application) is software designed for a specific purpose for end users. Types: mobile apps (iOS/Android), web apps (browser-based), desktop apps (installed on computer). Built using programming languages and frameworks.",
+"What is a developer?":"Software developer designs, codes, tests, and maintains software. Types: frontend (HTML, CSS, JavaScript), backend (server-side logic, databases, APIs), full-stack (both), mobile developer (iOS/Android). Work in teams using Agile methodology.",
+"What is a bug?":"A bug is an error, flaw, or unintended behavior in a program causing incorrect results or crashes. Types: syntax errors, logic errors, runtime errors. Finding and fixing bugs is called debugging.",
+"What is testing?":"Software testing verifies a program works correctly and meets requirements. Types: Unit, Integration, System, User Acceptance Testing. Manual vs automated testing. Testing finds bugs before release and ensures quality.",
+"What is HTML and what is it used for?":"HTML (HyperText Markup Language) structures web page content using elements and tags: h1-h6 (headings), p (paragraph), div (container), a (link), img (image). HTML5 added semantic tags (header, footer, nav, article).",
+"What is CSS and how does it style a webpage?":"CSS (Cascading Style Sheets) controls visual presentation of HTML. Selects elements and applies properties: color, font-size, padding, margin, display, flexbox, grid, animation. Three ways: inline, internal, external (.css file).",
+"What is JavaScript and what does it do on a webpage?":"JavaScript makes websites dynamic and interactive. Can manipulate DOM (change HTML/CSS), respond to user events, validate forms, make async HTTP requests. Only language natively supported by all browsers. Also runs server-side via Node.js.",
+"What is the difference between frontend and backend?":"Frontend: HTML, CSS, JavaScript - runs in user's browser, handles user interface. Backend: server-side (Node.js, Python, PHP, Java) - handles business logic, authentication, database operations, APIs. They communicate via HTTP.",
+"What is a web server?":"Web server software receives HTTP requests from browsers and responds with web pages or data. Serves HTML, CSS, JavaScript, images and static files. Popular: Apache, Nginx. Node.js/Express creates custom servers.",
+"What is a URL?":"URL (Uniform Resource Locator) is the complete address of a resource. Structure: protocol://subdomain.domain.tld:port/path?query=value#fragment. Example: https://www.example.com/products?id=5#reviews.",
+"What is the difference between GET and POST requests?":"GET: retrieve data, parameters in URL - visible, bookmarkable, cacheable, limited length, should not modify server state. POST: send data in request body - not visible in URL, no length limit, used for forms, login, creating data.",
+"What is responsive design?":"Responsive design makes websites adapt to different screen sizes. Techniques: CSS media queries (@media breakpoints), flexible grid layouts (CSS Grid, Flexbox), fluid images (max-width:100%), viewport meta tag.",
+"What is a cookie and what is local storage?":"Cookie: small data in browser, sent with every HTTP request to server, max 4KB, has expiration, used for sessions. Local Storage: client-side only, NOT sent to server, about 5MB capacity, persists after browser close.",
+"What is a DOM?":"DOM (Document Object Model) is a tree-like interface representing HTML as objects. Each HTML element is a node. JavaScript manipulates DOM to dynamically change content, style, structure without page reload.",
+"Explain the difference between REST and GraphQL APIs.":"REST: multiple endpoints returning predefined data structures - can over-fetch or under-fetch. Simple, widely used. GraphQL: single endpoint - client specifies exact data needed. No over/under-fetching. Better for complex or nested data.",
+"What is AJAX and how does it work?":"AJAX updates web page content without full page reload. JavaScript sends HTTP request in background via Fetch API. Server responds with JSON data. JavaScript receives response and updates specific DOM elements.",
+"What is the difference between synchronous and asynchronous JavaScript?":"Synchronous: executes line by line, blocking. Asynchronous: non-blocking - code continues while waiting for long operations. Mechanisms: callbacks (older), Promises (.then/.catch), async/await (cleaner syntax).",
+"What is a React component? Explain props and state.":"React component is a reusable UI piece - JavaScript function returning JSX. Props: data passed from parent to child component - read-only. State: internal component data managed by useState hook - mutable, when changed React re-renders.",
+"What is the difference between SQL and NoSQL databases in web apps?":"SQL (MySQL, PostgreSQL): relational tables, ACID transactions, strong consistency. NoSQL (MongoDB, Firebase): flexible documents, horizontal scaling. Web apps often use both: SQL for transactions, NoSQL for caching.",
+"What is session management and authentication?":"Authentication verifies who the user is (login). Session management maintains user identity across requests since HTTP is stateless. Methods: Session cookies (server stores session data), JWT tokens (client stores signed token).",
+"What is CORS and why does it exist?":"CORS (Cross-Origin Resource Sharing) is a browser security mechanism blocking requests from one origin to a different origin. Protects users from malicious sites making unauthorized requests. Server enables CORS by setting Access-Control-Allow-Origin headers.",
+"Explain the box model in CSS.":"CSS box model: Content (actual text/image), Padding (space between content and border), Border (surrounds padding), Margin (space outside border). box-sizing:border-box is preferred - includes padding and border in specified width.",
+"What is webpack and why is it used?":"Webpack is a module bundler for JavaScript applications. Takes many source files, resolves dependencies, bundles into optimized files. Features: code splitting, tree-shaking, minification, transpilation via Babel.",
+"What is the difference between server-side rendering and client-side rendering?":"CSR: browser downloads minimal HTML + large JS bundle - JavaScript renders content. Faster navigation, poor initial load and SEO. SSR: server renders complete HTML per request - fast initial load, better SEO. Example: Next.js.",
+"What is OAuth 2.0 and how does it work?":"OAuth 2.0 lets users grant third-party apps access to their resources without sharing passwords. Flow: user clicks 'Login with Google', redirected to Google, grants permission, Google sends authorization code, app exchanges code for access token.",
+"Explain the event loop in JavaScript and how it handles async operations.":"JavaScript is single-threaded. Event loop enables async: Call stack executes synchronous code. Web APIs handle async operations in background. When async operation completes, callback placed in task queue. Event loop moves tasks to stack when it's empty.",
+"What is WebSocket and when should you use it over HTTP?":"WebSocket provides persistent, full-duplex bidirectional communication over single TCP connection. Unlike HTTP (request-response), server can push data to client anytime. Use for: chat apps, live notifications, online gaming, collaborative editing.",
+"Explain the concept of progressive web apps (PWAs).":"PWA delivers app-like experiences using modern web APIs. Key features: Service Worker (enables offline functionality, push notifications), Web App Manifest (allows Add to Home Screen), HTTPS required. Benefits: works offline, installable without app store.",
+"What is service worker and how does it enable offline functionality?":"Service worker is a JavaScript file that runs in background. Acts as network proxy: intercepts HTTP requests and can serve cached responses when offline. Cache strategies: Cache-First, Network-First. Enables PWA offline functionality.",
+"Explain the critical rendering path in browsers.":"Critical rendering path: Parse HTML -> build DOM. Parse CSS -> build CSSOM. Combine -> Render Tree. Layout (calculate positions). Paint (draw pixels). Optimize by: minimizing render-blocking resources, deferring non-critical CSS/JS.",
+"What is Content Security Policy (CSP) and why is it important?":"CSP is an HTTP header telling browsers which content sources are trusted. Prevents XSS attacks by blocking inline scripts and restricting script sources. Example: Content-Security-Policy: script-src 'self' trusted.cdn.com.",
+"Explain the virtual DOM and how React uses it for performance.":"Virtual DOM (VDOM): lightweight JavaScript copy of actual DOM. When state changes, React creates new VDOM tree, compares with previous (diffing), finds minimal changes needed, then batches updates to real DOM to minimize expensive operations.",
+"What is GraphQL subscriptions and when are they useful?":"GraphQL subscriptions enable real-time data. Client subscribes to specific events; server pushes updates when data changes. Uses WebSockets under the hood. Useful for: live notifications, real-time dashboards, collaborative features.",
+"What is micro-frontend architecture?":"Micro-frontend: apply microservices concept to frontend - split large frontend app into smaller, independently deployable pieces. Each micro-frontend built with own tech stack, deployed independently. Benefits: team autonomy, independent deployment.",
+"What is a browser?":"A web browser is an application for accessing and displaying websites. Sends HTTP requests to web servers, receives HTML/CSS/JavaScript, and renders it visually. Has rendering engine (Chrome: Blink), JavaScript engine (Chrome: V8). Popular: Chrome, Firefox, Edge, Safari.",
+"What is cyber security?":"Cyber security protects computer systems, networks, software, and data from digital attacks, unauthorized access, damage, and theft. Domains: network security, application security, information security. Core goal: maintain CIA triad (Confidentiality, Integrity, Availability).",
+"What is the difference between authentication and authorization?":"Authentication verifies identity - who are you? Methods: passwords, biometrics, OTP. Authorization determines permissions - what can you do? Happens after authentication. Example: login (authentication) then accessing specific folders based on role (authorization).",
+"What is a password and what makes it strong?":"A strong password is 12+ characters long, includes uppercase, lowercase, numbers, and special symbols. Avoid: common words, birthdays, sequential patterns. Use unique password per account. Password managers generate and store complex passwords. Enable 2FA.",
+"What is malware?":"Malware (malicious software) is any software designed to harm systems. Types: Virus (attaches to files, spreads), Worm (self-replicates across networks), Trojan (disguised as legitimate software), Ransomware (encrypts files, demands ransom), Spyware. Prevention: antivirus, keep OS updated.",
+"What is phishing?":"Phishing is a social engineering attack impersonating trusted entities via fake emails/websites to steal credentials. Warning signs: urgency, suspicious sender address, grammar errors, requests for sensitive info. Prevention: verify sender, enable 2FA.",
+"What is encryption?":"Encryption converts readable plaintext into unreadable ciphertext using algorithm and key. Symmetric (AES): same key for encrypt/decrypt - fast, good for large data. Asymmetric (RSA): public key encrypts, private key decrypts. HTTPS uses both.",
+"What is two-factor authentication?":"2FA adds second verification layer beyond password. Factor types: something you know (password), something you have (phone OTP, YubiKey), something you are (fingerprint, face). Even if password is stolen, attacker needs second factor.",
+"What is a virus vs a worm?":"Virus: attaches to legitimate files, requires human action to spread, damages data. Worm: self-replicating malware that spreads across networks automatically without human interaction - exploits network vulnerabilities. Worms spread faster and don't need a host file.",
+"What is a VPN?":"VPN (Virtual Private Network) creates an encrypted tunnel between your device and a VPN server. Benefits: encrypts data on public Wi-Fi, hides real IP address, enables secure remote corporate access. Protocols: OpenVPN, WireGuard, IPSec.",
+"What is the difference between symmetric and asymmetric encryption?":"Symmetric encryption: single secret key for both encryption and decryption - fast, efficient for large data but key distribution is a problem. Examples: AES-256. Asymmetric: public key encrypts, private key decrypts. Examples: RSA. HTTPS uses asymmetric to exchange symmetric session keys.",
+"What is a SQL injection attack? How do you prevent it?":"SQL injection: attacker inserts malicious SQL into input fields to manipulate database queries. Example: entering ' OR '1'='1 in login form bypasses authentication. Prevention: parameterized queries/prepared statements (most effective), input validation, ORM frameworks.",
+"What is cross-site scripting (XSS)?":"XSS: attacker injects malicious JavaScript into web pages viewed by other users. Types: Stored XSS (script saved in database), Reflected XSS (script in URL parameter). Consequences: steal cookies/sessions, redirect users. Prevention: encode output, Content Security Policy (CSP).",
+"What is a man-in-the-middle attack?":"MITM: attacker secretly intercepts communication between two parties. Techniques: ARP poisoning, rogue Wi-Fi hotspot, DNS spoofing. Can steal credentials. Prevention: HTTPS with certificate verification, HSTS, certificate pinning, VPN on public Wi-Fi.",
+"What is a denial of service (DoS) attack?":"DoS floods target server with traffic to exhaust resources, making service unavailable. DDoS (Distributed): attack from thousands of compromised devices (botnet). Mitigation: rate limiting, traffic scrubbing, CDN, WAF, BGP blackholing.",
+"What is public key infrastructure (PKI)?":"PKI is a framework managing digital certificates and public-key encryption. Certificate Authority (CA) issues certificates. Digital certificates bind public key to identity. When you visit HTTPS site, browser verifies certificate was issued by trusted CA.",
+"What is the CIA triad in cyber security?":"CIA Triad: Confidentiality - information accessible only to authorized parties (encryption, access controls). Integrity - data is accurate and untampered (checksums, hashing). Availability - systems and data accessible when needed (backups, redundancy, DDoS protection).",
+"What is penetration testing?":"Penetration testing (ethical hacking) simulates cyberattacks with permission to find vulnerabilities. Phases: reconnaissance, scanning (find open ports), exploitation, post-exploitation, reporting. Types: black box (no info), white box (full info). Certifications: CEH, OSCP.",
+"What is a zero-day vulnerability?":"Zero-day vulnerability is a software flaw unknown to the vendor - no patch exists yet. Called 'zero-day' because vendor has had zero days to fix it. Extremely dangerous - can be exploited with no defense available.",
+"What is social engineering in cyber security?":"Social engineering manipulates people psychologically to reveal confidential info. Examples: phishing (fake emails), vishing (phone calls impersonating IT support), pretexting (fabricated scenarios), baiting (malicious USB drives). Prevention: security awareness training.",
+"Explain the RSA encryption algorithm.":"RSA uses difficulty of factoring large numbers. Key generation: choose two large primes p and q, compute n = p*q, compute Euler totient phi(n), choose public exponent e, compute private exponent d such that e*d = 1 mod phi(n). Encrypt: C = M^e mod n. Decrypt: M = C^d mod n.",
+"What is a buffer overflow attack and how is it exploited?":"Buffer overflow: program writes more data to a buffer than it can hold, overwriting adjacent memory. Attacker overwrites return address to redirect execution to malicious shellcode. Prevention: bounds checking, stack canaries, ASLR, NX (non-executable memory pages).",
+"Explain the concept of defense in depth.":"Defense in depth applies multiple layers of security so if one fails, others still protect. Layers: Physical security, Perimeter (firewall, IDS/IPS), Network (segmentation), Endpoint (antivirus), Application (secure coding, WAF), Data (encryption at rest), User (authentication, training).",
+"What is a rainbow table attack and how does salting prevent it?":"Rainbow table: precomputed lookup table mapping password hashes to original passwords - attacker can instantly crack matching hashes. Salting: add unique random string to each password before hashing - same password produces different hash for each user. Rainbow tables become useless.",
+"Explain the OWASP Top 10 vulnerabilities.":"OWASP Top 10 most critical web security risks: 1) Injection. 2) Broken Authentication. 3) Sensitive Data Exposure. 4) XML External Entities (XXE). 5) Broken Access Control. 6) Security Misconfiguration. 7) XSS. 8) Insecure Deserialization. 9) Vulnerable Components. 10) Insufficient Logging/Monitoring.",
+"What is a side-channel attack?":"Side-channel attack extracts secret information by analyzing physical implementation of a system. Examples: Timing attacks (measure how long operations take), Power analysis (measure power consumption), Cache-timing attacks (Spectre, Meltdown). Exploits implementation not algorithm.",
+"Explain the difference between IDS and IPS systems.":"IDS (Intrusion Detection System): monitors network traffic and alerts when suspicious activity detected - passive, only detects. IPS (Intrusion Prevention System): monitors and actively blocks malicious traffic in real-time. IDS for detection and forensics; IPS for active prevention.",
+"What is steganography?":"Steganography hides secret information within ordinary files to avoid detection. Examples: hiding text in image pixels (LSB steganography), hiding data in audio files. Unlike encryption which makes data unreadable, steganography hides its very existence.",
+"Explain the concept of threat modeling.":"Threat modeling identifies and prioritizes potential security threats. Process: 1) Define security objectives. 2) Create data flow diagram. 3) Identify threats using STRIDE (Spoofing, Tampering, Repudiation, Information disclosure, DoS, Elevation of privilege). 4) Prioritize risks. 5) Plan mitigations.",
+"What is the difference between black hat, white hat, and grey hat hackers?":"White hat hackers: ethical security professionals who hack systems WITH explicit permission - penetration testers. Help organizations improve security. Certifications: CEH, OSCP. Black hat: malicious criminals who hack WITHOUT permission - illegal. Grey hat: find vulnerabilities without permission but report them.",
+"What is a hacker?":"A hacker is someone who uses technical skills to access or manipulate computer systems. White hat (ethical): authorized security testing. Black hat (malicious): unauthorized access for criminal purposes. Grey hat: unauthorized access but typically reports findings.",
+"What is data privacy?":"Data privacy is individuals' right to control how their personal information is collected, used, and shared. Laws: GDPR (Europe - strict, heavy fines), CCPA (California). Best practices: read privacy policies, minimize data you share, adjust app permissions.",
+"What is safe browsing?":"Safe browsing practices: use HTTPS websites (padlock icon), don't click suspicious links, download only from trusted sources, use strong unique passwords with 2FA, keep browser and OS updated with security patches, be cautious on public Wi-Fi (use VPN).",
+"What is virus in computer?":"A computer virus is malicious code that attaches to programs or files and spreads when infected files are shared. Effects: corrupt or delete files, steal information, slow system, give attackers remote access. Prevention: install reputable antivirus software, keep OS updated, avoid suspicious downloads."
+};
+
+// ─── AI fallback for missing answers ────────────────────────────────────────
+const aiCache = {};
+
+async function getModelAnswer(question) {
+  if (MA[question]) return MA[question];
+  if (aiCache[question]) return aiCache[question];
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 200,
+        messages: [{
+          role: "user",
+          content: `You are a CS/IT professor. Give a clear, concise model answer (3-5 sentences) for this viva question: "${question}". Only provide the answer, no preamble.`
+        }]
+      })
+    });
+    const data = await res.json();
+    const answer = data.content?.[0]?.text || "Please review this topic in your textbook for a complete answer.";
+    aiCache[question] = answer;
+    return answer;
+  } catch(e) {
+    return "Please review this topic in your textbook for a complete answer.";
+  }
+}
+
+// ─── RENDER RESULT ───────────────────────────────────────────────────────────
+async function renderResult(data) {
+  const { subject, diff, examiner, score, totalScore, percentage, violations, answers, date } = data;
+  const exNames = { strict: 'Strict Professor', friendly: 'Friendly Mentor', industry: 'Industry Expert' };
+  const d = new Date(date).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+  const pctColor = percentage >= 70 ? '#00ff94' : percentage >= 50 ? '#ffd166' : '#ff3d71';
+  const grade = percentage >= 80 ? 'Excellent 🏆' : percentage >= 60 ? 'Good 👍' : percentage >= 40 ? 'Average 📚' : 'Needs Work 💪';
+  const gradeColor = percentage >= 80 ? '#00ff94' : percentage >= 60 ? '#ffd166' : percentage >= 40 ? '#00e5ff' : '#ff3d71';
+  const pct = `${percentage}%`;
+
+  document.getElementById('main').innerHTML = `
+    <div class="score-header" style="--clr:${pctColor};--pct:${pct}">
+      <h2>Viva Complete!</h2>
+      <div class="score-meta">${subject} &bull; ${(diff||'medium').toUpperCase()} &bull; ${exNames[examiner||'strict']} &bull; ${d}</div>
+      <div class="score-circle" style="--clr:${pctColor};--pct:${pct}">
+        <div class="score-pct" style="color:${pctColor}">${percentage}%</div>
+        <div class="score-lbl">Score</div>
+      </div>
+      <div class="grade-badge" style="background:${gradeColor}22;color:${gradeColor};border:1px solid ${gradeColor}44">${grade}</div>
+      <div class="stats-row">
+        <div class="stat-box"><span class="stat-val" style="color:#00e5ff">${score}/${totalScore}</span><span class="stat-key">Total Marks</span></div>
+        <div class="stat-box"><span class="stat-val" style="color:#00ff94">${answers.filter(a=>a.score>=8).length}</span><span class="stat-key">Excellent</span></div>
+        <div class="stat-box"><span class="stat-val" style="color:#ffd166">${answers.filter(a=>a.score>=5&&a.score<8).length}</span><span class="stat-key">Average</span></div>
+        <div class="stat-box"><span class="stat-val" style="color:#ff3d71">${answers.filter(a=>a.score<5).length}</span><span class="stat-key">Poor</span></div>
+      </div>
+    </div>
+    ${violations&&violations.length?`<div class="violations-card"><h3>⚠ Anti-Cheat Violations (${violations.length})</h3>${violations.map(v=>`<div class="violation-item">${v}</div>`).join('')}</div>`:''}
+    <div class="section-title">Question by Question Review</div>
+    <div id="q-list">
+      ${answers.map((a,i)=>{
+        const skip = a.answer&&a.answer.includes('SKIPPED');
+        const cls = skip?'skipped':a.score>=8?'excellent':a.score>=5?'good':'poor';
+        const badge = skip?'SKIPPED':a.score+'/10';
+        return `<div class="q-card ${cls}" id="qc-${i}">
+          <div class="q-card-header"><div class="q-num">Question ${i+1} of ${answers.length}</div><div class="q-score-badge ${cls}">${badge}</div></div>
+          <div class="q-question">${a.question}</div>
+          <div class="q-lbl user">✏ Your Answer</div>
+          <div class="q-box ${skip?'skip':''}">${skip?'This question was skipped due to a violation. 0 marks awarded.':(a.answer||'(No answer provided)')}</div>
+          <div class="q-lbl ai">✨ Model Answer</div>
+          <div class="q-box ai loading" id="ma-${i}">
+            <div class="dots"><span></span><span></span><span></span></div> Loading...
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="action-row">
+      <button class="btn-dl" onclick="downloadReport()">⬇ Download Report</button>
+      <button class="btn-hist" onclick="window.location.href='history.html'">📋 View History</button>
+      <button class="btn-new" onclick="window.location.href='viva.html'">🎤 New Viva</button>
+    </div>`;
+
+  // Load model answers in background
+  for (let i = 0; i < answers.length; i++) {
+    const a = answers[i];
+    const skip = a.answer && a.answer.includes('SKIPPED');
+    const el = document.getElementById(`ma-${i}`);
+    if (!el) continue;
+    if (skip) {
+      el.className = 'q-box ai skip';
+      el.textContent = 'Question was skipped. No model answer available.';
+      continue;
+    }
+    const ans = await getModelAnswer(a.question);
+    el.className = 'q-box ai';
+    el.textContent = ans;
+  }
+}
+
+// ─── DOWNLOAD REPORT ─────────────────────────────────────────────────────────
+window.downloadReport = function() {
+  const raw = sessionStorage.getItem('vivaResult');
+  if (!raw) return;
+  const d = JSON.parse(raw);
+  const exN = { strict:'Strict Professor', friendly:'Friendly Mentor', industry:'Industry Expert' };
+  const grade = d.percentage>=80?'Excellent':d.percentage>=60?'Good':d.percentage>=40?'Average':'Needs Work';
+  let r = `VIVAIQ PERFORMANCE REPORT\nGenerated: ${new Date(d.date).toLocaleDateString()}\n${'='.repeat(50)}\nSubject: ${d.subject}\nDifficulty: ${(d.diff||'medium').toUpperCase()}\nExaminer: ${exN[d.examiner||'strict']}\n\nOVERALL SCORE: ${d.score}/${d.totalScore} (${d.percentage}%)\nGrade: ${grade}\nViolations: ${d.violations?d.violations.length:0}\n\n`;
+  if (d.violations&&d.violations.length) { r+=`VIOLATIONS\n${'-'.repeat(30)}\n`; d.violations.forEach(v=>r+=v+'\n'); r+='\n'; }
+  r += `QUESTION BY QUESTION REVIEW\n${'='.repeat(50)}\n`;
+  d.answers.forEach((a,i) => {
+    const mAns = MA[a.question] || aiCache[a.question] || 'Please review this topic in your textbook.';
+    r += `\nQ${i+1} [Score: ${a.score}/10]\nQuestion: ${a.question}\n\nYour Answer:\n${a.answer||'(No answer)'}\n\nModel Answer:\n${mAns}\n\n${'-'.repeat(50)}\n`;
+  });
+  const blob = new Blob([r], {type:'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href=url; link.download=`VivaIQ_Report_${(d.subject||'').replace(/\s/g,'_')}_${Date.now()}.txt`; link.click();
+  URL.revokeObjectURL(url);
+};
+
+// ─── LOAD IMMEDIATELY (NO auth wait) ─────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', function() {
+  const raw = sessionStorage.getItem('vivaResult');
+  if (!raw) {
+    document.getElementById('main').innerHTML = '<div class="err"><h3>No result found!</h3><p>Please complete a viva first.</p><button onclick="window.location.href=\'viva.html\'">Start Viva</button></div>';
+    return;
+  }
+  try { renderResult(JSON.parse(raw)); }
+  catch(e) { document.getElementById('main').innerHTML = '<div class="err"><h3>Error loading result</h3><button onclick="window.location.href=\'viva.html\'">Go Back</button></div>'; }
+});
+</script>
+
+<!-- Firebase: ONLY for user badge + logout — does NOT block result display -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+  const firebaseConfig = { apiKey: "AIzaSyAzVeBAh3N9F2aFW422YZ_6mcXwlYcyf3E", authDomain: "vivaiq-24c89.firebaseapp.com", projectId: "vivaiq-24c89", storageBucket: "vivaiq-24c89.firebasestorage.app", messagingSenderId: "356031432226", appId: "1:356031432266:web:d9363105d8a7bcdbc9ac7b" };
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  window.logoutUser = async function() { await signOut(auth); window.location.href = 'index.html'; };
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      try { const snap = await getDoc(doc(db,'users',user.uid)); if (snap.exists()) document.getElementById('user-badge').textContent = snap.data().name; } catch(e) {}
+    } else { window.location.href = 'index.html'; }
+  });
+</script>
+</body>
+</html>
