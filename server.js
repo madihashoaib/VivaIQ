@@ -9,6 +9,12 @@ app.get('/api/test', (req, res) => {
   res.json({ message: 'VivaIQ server is running!' })
 })
 
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`)
-})
+// Export for Vercel
+module.exports = app
+
+// Keep this for local dev only
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running at http://localhost:${PORT}`)
+  })
+}
