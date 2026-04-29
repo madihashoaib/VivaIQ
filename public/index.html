@@ -20,7 +20,7 @@
     .container {
       text-align: center;
       width: 100%;
-      max-width: 420px;
+      max-width: 460px;
       padding: 24px;
     }
 
@@ -41,18 +41,101 @@
       margin-bottom: 40px;
     }
 
+    /* ROLE SELECTION */
+    #role-select { display: block; }
+
+    .role-title {
+      font-size: 16px;
+      color: #a0aec0;
+      margin-bottom: 24px;
+      font-weight: 500;
+    }
+
+    .role-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 0;
+    }
+
+    .role-card {
+      background: #0d1220;
+      border: 1px solid #1e2a42;
+      border-radius: 20px;
+      padding: 32px 20px;
+      cursor: pointer;
+      transition: all 0.25s;
+      text-align: center;
+    }
+
+    .role-card:hover { transform: translateY(-4px); }
+
+    .role-card.student:hover { border-color: #00e5ff; box-shadow: 0 8px 32px rgba(0,229,255,0.12); }
+    .role-card.admin:hover   { border-color: #a259ff; box-shadow: 0 8px 32px rgba(162,89,255,0.12); }
+
+    .role-icon { font-size: 42px; margin-bottom: 14px; display: block; }
+    .role-name { font-size: 17px; font-weight: 800; margin-bottom: 6px; color: white; }
+    .role-desc { font-size: 11px; color: #6b7a9e; letter-spacing: 0.5px; }
+
+    .role-card.student .role-badge { background: rgba(0,229,255,0.1); color: #00e5ff; }
+    .role-card.admin  .role-badge { background: rgba(162,89,255,0.1); color: #a259ff; }
+
+    .role-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-top: 12px;
+    }
+
+    /* AUTH CARD */
     .card {
       background: #0d1220;
       border: 1px solid #1e2a42;
       border-radius: 20px;
       padding: 40px;
+      display: none;
     }
 
-    .card h2 {
-      font-size: 22px;
+    .card.active { display: block; }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       margin-bottom: 28px;
-      color: white;
     }
+
+    .card-header h2 { font-size: 20px; color: white; font-weight: 800; }
+
+    .back-btn {
+      background: transparent;
+      border: 1px solid #1e2a42;
+      border-radius: 8px;
+      padding: 6px 12px;
+      color: #6b7a9e;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .back-btn:hover { border-color: #00e5ff; color: #00e5ff; }
+
+    .role-indicator {
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      display: inline-block;
+    }
+
+    .role-indicator.student { background: rgba(0,229,255,0.1); color: #00e5ff; }
+    .role-indicator.admin   { background: rgba(162,89,255,0.1); color: #a259ff; }
 
     input {
       width: 100%;
@@ -68,9 +151,9 @@
 
     input:focus { border-color: #00e5ff; }
 
-    button {
+    .btn-student {
       width: 100%;
-      background: linear-gradient(135deg, #00e5ff, #a259ff);
+      background: linear-gradient(135deg, #00e5ff, #0099cc);
       border: none;
       border-radius: 10px;
       padding: 16px;
@@ -82,10 +165,37 @@
       letter-spacing: 1px;
     }
 
-    button:hover { opacity: 0.9; transform: translateY(-2px); }
+    .btn-admin {
+      width: 100%;
+      background: linear-gradient(135deg, #a259ff, #6c2bd9);
+      border: none;
+      border-radius: 10px;
+      padding: 16px;
+      color: white;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      margin-top: 8px;
+      letter-spacing: 1px;
+    }
+
+    .btn-student:hover, .btn-admin:hover { opacity: 0.9; transform: translateY(-2px); }
 
     .card p { margin-top: 20px; color: #6b7a9e; font-size: 13px; }
-    .card a { color: #00e5ff; text-decoration: none; font-weight: 700; }
+    .card a { text-decoration: none; font-weight: 700; }
+    .link-student { color: #00e5ff; }
+    .link-admin   { color: #a259ff; }
+
+    .admin-note {
+      background: rgba(162,89,255,0.06);
+      border: 1px solid rgba(162,89,255,0.2);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 11px;
+      color: #a259ff;
+      margin-bottom: 14px;
+      text-align: left;
+    }
   </style>
 </head>
 <body>
@@ -97,38 +207,85 @@
       <p>Intelligent Viva Simulator</p>
     </div>
 
-    <div class="card">
-
-      <!-- Login Form -->
-      <div id="login-form">
-        <h2>Welcome Back</h2>
-        <input type="email" id="login-email" placeholder="Email Address" />
-        <input type="password" id="login-password" placeholder="Password" />
-        <button onclick="loginUser()">Login</button>
-        <p>Don't have an account?
-          <a href="#" onclick="showSignup()">Sign Up</a>
-        </p>
+    <!-- ROLE SELECTION -->
+    <div id="role-select">
+      <p class="role-title">Who are you?</p>
+      <div class="role-cards">
+        <div class="role-card student" onclick="selectRole('student')">
+          <span class="role-icon">🎓</span>
+          <div class="role-name">Student</div>
+          <div class="role-desc">Practice viva, track scores & history</div>
+          <div class="role-badge">Take Viva</div>
+        </div>
+        <div class="role-card admin" onclick="selectRole('admin')">
+          <span class="role-icon">👔</span>
+          <div class="role-name">Professor</div>
+          <div class="role-desc">Manage questions, view student results</div>
+          <div class="role-badge">Admin Panel</div>
+        </div>
       </div>
-
-      <!-- Signup Form -->
-      <div id="signup-form" style="display:none;">
-        <h2>Create Account</h2>
-        <input type="text" id="signup-name" placeholder="Full Name" />
-        <input type="email" id="signup-email" placeholder="Email Address" />
-        <input type="password" id="signup-password" placeholder="Password" />
-        <button onclick="signupUser()">Create Account</button>
-        <p>Already have an account?
-          <a href="#" onclick="showLogin()">Login</a>
-        </p>
-      </div>
-
     </div>
+
+    <!-- STUDENT AUTH CARD -->
+    <div class="card" id="student-card">
+      <div class="card-header">
+        <h2 id="student-title">Student Login</h2>
+        <button class="back-btn" onclick="goBack()">← Back</button>
+      </div>
+      <div style="text-align:center">
+        <span class="role-indicator student">🎓 Student</span>
+      </div>
+
+      <div id="student-login-form">
+        <input type="email" id="s-login-email" placeholder="Email Address" />
+        <input type="password" id="s-login-password" placeholder="Password" />
+        <button class="btn-student" onclick="loginUser()">Login</button>
+        <p>Don't have an account? <a href="#" class="link-student" onclick="showStudentSignup()">Sign Up</a></p>
+      </div>
+
+      <div id="student-signup-form" style="display:none;">
+        <input type="text" id="s-signup-name" placeholder="Full Name" />
+        <input type="email" id="s-signup-email" placeholder="Email Address" />
+        <input type="password" id="s-signup-password" placeholder="Password" />
+        <button class="btn-student" onclick="signupUser()">Create Account</button>
+        <p>Already have an account? <a href="#" class="link-student" onclick="showStudentLogin()">Login</a></p>
+      </div>
+    </div>
+
+    <!-- ADMIN AUTH CARD -->
+    <div class="card" id="admin-card">
+      <div class="card-header">
+        <h2 id="admin-title">Professor Login</h2>
+        <button class="back-btn" onclick="goBack()">← Back</button>
+      </div>
+      <div style="text-align:center">
+        <span class="role-indicator admin">👔 Professor / Admin</span>
+      </div>
+
+      <div id="admin-login-form">
+        <input type="email" id="a-login-email" placeholder="Email Address" />
+        <input type="password" id="a-login-password" placeholder="Password" />
+        <button class="btn-admin" onclick="loginAdmin()">Login to Dashboard</button>
+        <p>New professor? <a href="#" class="link-admin" onclick="showAdminSignup()">Register</a></p>
+      </div>
+
+      <div id="admin-signup-form" style="display:none;">
+        <div class="admin-note">🔐 A secret admin code is required to register as a professor.</div>
+        <input type="text" id="a-signup-name" placeholder="Full Name" />
+        <input type="email" id="a-signup-email" placeholder="Email Address" />
+        <input type="password" id="a-signup-password" placeholder="Password" />
+        <input type="password" id="a-admin-code" placeholder="Admin Secret Code" />
+        <button class="btn-admin" onclick="signupAdmin()">Register as Professor</button>
+        <p>Already registered? <a href="#" class="link-admin" onclick="showAdminLogin()">Login</a></p>
+      </div>
+    </div>
+
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAzVeBAh3N9F2aFW422YZ_6mcXwlYcyf3E",
@@ -139,63 +296,111 @@
       appId: "1:356031432226:web:d9363105d8a7bcdbc9ac7b"
     };
 
-    const app = initializeApp(firebaseConfig)
-    const auth = getAuth(app)
-    const db = getFirestore(app)
+    const ADMIN_SECRET = "PROF2024"; // Admin secret code — professors know this
 
-    window.showSignup = function() {
-      document.getElementById('login-form').style.display = 'none'
-      document.getElementById('signup-form').style.display = 'block'
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // ── ROLE SELECTION ──
+    window.selectRole = function(role) {
+      document.getElementById('role-select').style.display = 'none';
+      if (role === 'student') document.getElementById('student-card').classList.add('active');
+      else document.getElementById('admin-card').classList.add('active');
     }
 
-    window.showLogin = function() {
-      document.getElementById('signup-form').style.display = 'none'
-      document.getElementById('login-form').style.display = 'block'
+    window.goBack = function() {
+      document.getElementById('student-card').classList.remove('active');
+      document.getElementById('admin-card').classList.remove('active');
+      document.getElementById('role-select').style.display = 'block';
+    }
+
+    // ── STUDENT ──
+    window.showStudentSignup = function() {
+      document.getElementById('student-login-form').style.display = 'none';
+      document.getElementById('student-signup-form').style.display = 'block';
+      document.getElementById('student-title').textContent = 'Create Account';
+    }
+    window.showStudentLogin = function() {
+      document.getElementById('student-signup-form').style.display = 'none';
+      document.getElementById('student-login-form').style.display = 'block';
+      document.getElementById('student-title').textContent = 'Student Login';
     }
 
     window.loginUser = async function() {
-      const email = document.getElementById('login-email').value
-      const password = document.getElementById('login-password').value
-
-      if(email === '' || password === '') {
-        alert('Please fill all fields!')
-        return
-      }
-
+      const email = document.getElementById('s-login-email').value;
+      const password = document.getElementById('s-login-password').value;
+      if (!email || !password) { alert('Please fill all fields!'); return; }
       try {
-        await signInWithEmailAndPassword(auth, email, password)
-        alert('Login successful! 🎉')
-        window.location.href = 'viva.html'
-      } catch(error) {
-        alert('Error: ' + error.message)
-      }
+        await signInWithEmailAndPassword(auth, email, password);
+        window.location.href = 'viva.html';
+      } catch(e) { alert('Error: ' + e.message); }
     }
 
     window.signupUser = async function() {
-      const name = document.getElementById('signup-name').value
-      const email = document.getElementById('signup-email').value
-      const password = document.getElementById('signup-password').value
+      const name = document.getElementById('s-signup-name').value;
+      const email = document.getElementById('s-signup-email').value;
+      const password = document.getElementById('s-signup-password').value;
+      if (!name || !email || !password) { alert('Please fill all fields!'); return; }
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        await setDoc(doc(db, 'users', cred.user.uid), {
+          name, email, role: 'student', createdAt: new Date().toISOString()
+        });
+        window.location.href = 'viva.html';
+      } catch(e) { alert('Error: ' + e.message); }
+    }
 
-      if(name === '' || email === '' || password === '') {
-        alert('Please fill all fields!')
-        return
+    // ── ADMIN ──
+    window.showAdminSignup = function() {
+      document.getElementById('admin-login-form').style.display = 'none';
+      document.getElementById('admin-signup-form').style.display = 'block';
+      document.getElementById('admin-title').textContent = 'Register as Professor';
+    }
+    window.showAdminLogin = function() {
+      document.getElementById('admin-signup-form').style.display = 'none';
+      document.getElementById('admin-login-form').style.display = 'block';
+      document.getElementById('admin-title').textContent = 'Professor Login';
+    }
+
+    window.loginAdmin = async function() {
+      const email = document.getElementById('a-login-email').value;
+      const password = document.getElementById('a-login-password').value;
+      if (!email || !password) { alert('Please fill all fields!'); return; }
+      try {
+        const cred = await signInWithEmailAndPassword(auth, email, password);
+        // Verify admin role
+        const snap = await getDoc(doc(db, 'users', cred.user.uid));
+        if (snap.exists() && snap.data().role === 'admin') {
+          window.location.href = 'admin.html';
+        } else {
+          alert('Access denied! This account does not have admin privileges.');
+          await auth.signOut();
+        }
+      } catch(e) { alert('Error: ' + e.message); }
+    }
+
+    window.signupAdmin = async function() {
+      const name = document.getElementById('a-signup-name').value;
+      const email = document.getElementById('a-signup-email').value;
+      const password = document.getElementById('a-signup-password').value;
+      const code = document.getElementById('a-admin-code').value;
+
+      if (!name || !email || !password || !code) { alert('Please fill all fields!'); return; }
+
+      if (code !== ADMIN_SECRET) {
+        alert('❌ Invalid admin code! Please contact your institution.');
+        return;
       }
 
       try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password)
-        const user = userCredential.user
-
-        await setDoc(doc(db, 'users', user.uid), {
-          name: name,
-          email: email,
-          createdAt: new Date().toISOString()
-        })
-
-        alert('Account created successfully! 🎉')
-        window.location.href = 'viva.html'
-      } catch(error) {
-        alert('Error: ' + error.message)
-      }
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        await setDoc(doc(db, 'users', cred.user.uid), {
+          name, email, role: 'admin', createdAt: new Date().toISOString()
+        });
+        alert('✅ Professor account created successfully!');
+        window.location.href = 'admin.html';
+      } catch(e) { alert('Error: ' + e.message); }
     }
   </script>
 
